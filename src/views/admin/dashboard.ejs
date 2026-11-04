@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tigrinho Admin | Dashboard de Ganhos e Métricas</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <%- include('header') %>
+
+    <main class="admin-content">
+      <div class="page-title-row">
+        <div>
+          <h2>Painel Geral de Métricas e Desempenho</h2>
+          <p>Acompanhamento financeiro em tempo real, rentabilidade da casa (GGR) e indicadores matemáticos.</p>
+        </div>
+        <div>
+          <button class="btn-refresh" onclick="location.reload()">🔄 Atualizar Dados</button>
+        </div>
+      </div>
+
+      <!-- KPI Cards Grid -->
+      <div class="kpi-grid">
+        <!-- GGR -->
+        <div class="kpi-card highlight-ggr">
+          <div class="kpi-header">
+            <span class="kpi-title">GGR (LUCRO DA BANCA)</span>
+            <span class="kpi-icon">💰</span>
+          </div>
+          <div class="kpi-value <%= metrics.ggrCents >= 0 ? 'color-green' : 'color-red' %>">
+            R$ <%= metrics.ggrFormatted %>
+          </div>
+          <div class="kpi-sub">Total Apostado (-) Total Pago aos Jogadores</div>
+        </div>
+
+        <!-- Turnover -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">VOLUME APOSTADO (TURNOVER)</span>
+            <span class="kpi-icon">🎰</span>
+          </div>
+          <div class="kpi-value">R$ <%= metrics.totalWageredFormatted %></div>
+          <div class="kpi-sub"><%= metrics.totalSpins.toLocaleString() %> giros computados</div>
+        </div>
+
+        <!-- Payout -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">TOTAL RETORNADO (PAYOUT)</span>
+            <span class="kpi-icon">🏆</span>
+          </div>
+          <div class="kpi-value color-gold">R$ <%= metrics.totalPayoutFormatted %></div>
+          <div class="kpi-sub"><%= metrics.totalWins.toLocaleString() %> rodadas com ganho</div>
+        </div>
+
+        <!-- RTP Real vs Alvo -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">RTP REAL MEDIDO</span>
+            <span class="kpi-icon">🎯</span>
+          </div>
+          <div class="kpi-value"><%= metrics.realRtp %>%</div>
+          <div class="kpi-sub">Alvo Calibrado: <strong><%= metrics.targetRtp %>%</strong></div>
+        </div>
+
+        <!-- House Edge -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">HOUSE EDGE (MARGEM DA CASA)</span>
+            <span class="kpi-icon">🏛️</span>
+          </div>
+          <div class="kpi-value color-green"><%= metrics.houseEdge %>%</div>
+          <div class="kpi-sub">Retenção Teórica Alvo: <strong><%= metrics.targetHouseEdge %>%</strong></div>
+        </div>
+
+        <!-- Hit Frequency -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">HIT FREQUENCY (FREQ. DE VITÓRIA)</span>
+            <span class="kpi-icon">⚡</span>
+          </div>
+          <div class="kpi-value"><%= metrics.hitFrequency %>%</div>
+          <div class="kpi-sub">Bônus Tigre da Sorte: <strong><%= metrics.bonusChance %>%</strong></div>
+        </div>
+
+        <!-- Depósitos -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">DEPÓSITOS APROVADOS (PIX)</span>
+            <span class="kpi-icon">📥</span>
+          </div>
+          <div class="kpi-value color-green">R$ <%= metrics.totalDepositedFormatted %></div>
+          <div class="kpi-sub">Via Gateway SuitPay</div>
+        </div>
+
+        <!-- Saques -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">SAQUES REALIZADOS (PIX)</span>
+            <span class="kpi-icon">📤</span>
+          </div>
+          <div class="kpi-value color-gold">R$ <%= metrics.totalWithdrawnFormatted %></div>
+          <div class="kpi-sub">Via Gateway SuitPay</div>
+        </div>
+      </div>
+
+      <!-- Rodadas Recentes -->
+      <div class="admin-panel-card mt-4">
+        <div class="panel-card-head">
+          <h3>Últimas 10 Rodadas Jogadas na Plataforma</h3>
+          <a href="/admin/users" class="btn-link">Ver Jogadores →</a>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Jogador</th>
+                <th>Aposta</th>
+                <th>Premiação</th>
+                <th>Multiplicador</th>
+                <th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (recentRounds.length > 0) { %>
+                <% recentRounds.forEach(r => { %>
+                  <tr>
+                    <td><%= new Date(r.created_at).toLocaleString('pt-BR') %></td>
+                    <td><strong><%= r.name %></strong> (<%= r.email %>)</td>
+                    <td>R$ <%= r.betFormatted %></td>
+                    <td class="<%= r.payout_cents > 0 ? 'color-green' : '' %>">
+                      R$ <%= r.payoutFormatted %>
+                    </td>
+                    <td><%= r.multiplier > 0 ? r.multiplier + 'x' : '-' %></td>
+                    <td>
+                      <% if (r.payout_cents > 0) { %>
+                        <span class="badge-success">PREMIADO</span>
+                      <% } else { %>
+                        <span class="badge-neutral">SEM GANHO</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="6" style="text-align: center;">Nenhum giro computado no momento.</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
+

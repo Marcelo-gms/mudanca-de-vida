@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tigrinho da Sorte | Jogo Oficial</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="game-body">
+  <div class="game-container">
+    <!-- Top Bar -->
+    <header class="game-header">
+      <div class="brand">
+        <span class="brand-icon">🐯</span>
+        <div class="brand-text">
+          <span class="brand-title">TIGRINHO</span>
+          <span class="brand-sub">DA SORTE</span>
+        </div>
+      </div>
+
+      <div class="user-bar">
+        <div class="balance-badge">
+          <span class="balance-label">SALDO:</span>
+          <span class="balance-value" id="balanceDisplay">R$ <%= wallet.balanceFormatted %></span>
+        </div>
+
+        <div class="header-actions">
+          <% if (user && user.role === 'admin') { %>
+            <a href="/admin" class="btn-icon" style="background:#818cf8; color:#000; font-weight:bold;" title="Painel de Administração">⚙️</a>
+          <% } %>
+          <button class="btn-deposit" id="openDepositBtn" title="Depositar via Pix">+ DEPOSITAR</button>
+          <button class="btn-withdraw" id="openWithdrawBtn" title="Sacar via Pix">SACAR</button>
+          <button class="btn-icon" id="toggleAudioBtn" title="Som">🔊</button>
+          <button class="btn-icon" id="openHistoryBtn" title="Histórico e Auditoria">📜</button>
+          <a href="/logout" class="btn-icon btn-logout" title="Sair">🚪</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="slot-arena">
+      <div class="slot-cabinet">
+        <div class="cabinet-roof">
+          <div class="roof-ornament">🏮</div>
+          <div class="roof-title">★ FORTUNE TIGER ★</div>
+          <div class="roof-ornament">🏮</div>
+        </div>
+
+        <div class="canvas-wrapper">
+          <canvas id="slotCanvas" width="340" height="340"></canvas>
+          
+          <!-- Win Banner Overlay -->
+          <div class="win-banner" id="winBanner">
+            <div class="win-text" id="winText">GRANDE VITÓRIA!</div>
+            <div class="win-amount" id="winAmount">R$ 0,00</div>
+          </div>
+
+          <!-- Fortune Tiger Bonus Alert -->
+          <div class="tiger-bonus-alert" id="tigerBonusAlert">
+            🐯 BÔNUS TIGRE DA SORTE ATIVADO! (5X) 🐯
+          </div>
+        </div>
+
+        <!-- Payline Indicator -->
+        <div class="payline-guide">
+          <span>🧧 5 Linhas de Pagamento</span>
+          <span>•</span>
+          <span>🐯 Tigre = Wild (50x)</span>
+        </div>
+      </div>
+
+      <!-- Controls Panel -->
+      <section class="controls-panel">
+        <div class="bet-controls">
+          <span class="control-label">VALOR DA APOSTA</span>
+          <div class="bet-selector">
+            <button class="bet-step-btn" id="betMinusBtn">-</button>
+            <div class="bet-value" id="currentBetDisplay">R$ 1,00</div>
+            <button class="bet-step-btn" id="betPlusBtn">+</button>
+          </div>
+
+          <div class="bet-presets">
+            <button class="preset-btn" data-bet="50">0.50</button>
+            <button class="preset-btn active" data-bet="100">1.00</button>
+            <button class="preset-btn" data-bet="200">2.00</button>
+            <button class="preset-btn" data-bet="500">5.00</button>
+            <button class="preset-btn" data-bet="1000">10.00</button>
+          </div>
+        </div>
+
+        <div class="action-controls">
+          <div class="turbo-toggle" id="turboToggleBtn">
+            <span class="turbo-icon">⚡</span>
+            <span class="turbo-label">TURBO</span>
+          </div>
+
+          <button class="spin-btn" id="spinBtn">
+            <span class="spin-text">GIRAR</span>
+          </button>
+        </div>
+
+        <div class="last-win-box">
+          <span class="last-win-label">ÚLTIMO GANHO</span>
+          <span class="last-win-val" id="lastWinDisplay">R$ 0,00</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Depósito Pix (Pay-in) -->
+  <div class="modal-overlay" id="depositModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💳 Depósito via Pix (SuitPay)</h3>
+        <button class="modal-close" data-close="depositModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Deposite via Pix para crédito imediato na sua conta.</p>
+
+        <div class="deposit-form" id="depositFormStep">
+          <label>Selecione ou digite o valor (R$):</label>
+          <div class="deposit-presets">
+            <button class="dep-preset-btn" data-amount="10">R$ 10</button>
+            <button class="dep-preset-btn" data-amount="20">R$ 20</button>
+            <button class="dep-preset-btn active" data-amount="50">R$ 50</button>
+            <button class="dep-preset-btn" data-amount="100">R$ 100</button>
+          </div>
+          <div class="form-group mt-2">
+            <input type="number" id="customDepositInput" value="50" min="5" max="10000" step="1">
+          </div>
+          <button class="btn-primary btn-block mt-3" id="generatePixBtn">GERAR PIX COPIA E COLA</button>
+        </div>
+
+        <!-- Passo do QR Code gerado -->
+        <div class="pix-result" id="pixResultStep" style="display: none;">
+          <div class="qrcode-wrapper">
+            <img id="pixQrCodeImg" src="" alt="QR Code Pix" />
+          </div>
+          <div class="pix-copia-cola-box">
+            <input type="text" id="pixCodeInput" readonly />
+            <button class="btn-secondary" id="copyPixBtn">COPIAR CHAVE PIX</button>
+          </div>
+          <div class="pix-status-notice">
+            <span class="spinner-dot"></span> Aguardando confirmação do pagamento...
+          </div>
+          <% if (isMockEnabled) { %>
+            <div class="dev-mock-box">
+              <span class="dev-badge">MODO TESTE</span>
+              <button class="btn-mock-pay" id="simularPagamentoBtn">Simular Pagamento Instantâneo (Dev)</button>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Saque Pix (Pay-out) -->
+  <div class="modal-overlay" id="withdrawModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💸 Saque via Pix (SuitPay)</h3>
+        <button class="modal-close" data-close="withdrawModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Rollover Tracker -->
+        <div class="rollover-tracker">
+          <div class="rollover-head">
+            <span>Progresso do Rollover (1x):</span>
+            <span id="rolloverStatusText"><%= wallet.rollover.progressPercent %>%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="rolloverProgressFill" style="width: <%= wallet.rollover.progressPercent %>%;"></div>
+          </div>
+          <small class="rollover-hint" id="rolloverHint">
+            <% if (wallet.rollover.isMet) { %>
+              ✅ Rollover cumprido! Saque 100% liberado.
+            <% } else { %>
+              ⚠️ Faltam apostar R$ <%= (wallet.rollover.remainingCents / 100).toFixed(2) %> para liberar o saque.
+            <% } %>
+          </small>
+        </div>
+
+        <div class="form-group mt-3">
+          <label>Chave Pix (CPF Casado Obrigatório):</label>
+          <input type="text" id="withdrawPixKey" value="<%= user.document %>" readonly class="input-locked" />
+          <small class="field-hint">🔒 Por regras de segurança estrita, o saque é enviado exclusivamente para o CPF do titular cadastrado.</small>
+        </div>
+
+        <div class="form-group mt-2">
+          <label>Valor do Saque (R$):</label>
+          <input type="number" id="withdrawAmountInput" min="10" max="<%= (wallet.balanceCents / 100).toFixed(0) %>" value="10" step="1">
+          <small class="field-hint">Saldo disponível: R$ <span id="withdrawAvailBalance"><%= wallet.balanceFormatted %></span></small>
+        </div>
+
+        <div id="withdrawErrorMsg" class="alert-error" style="display: none;"></div>
+
+        <button class="btn-primary btn-block mt-3" id="confirmWithdrawBtn" <%= !wallet.rollover.isMet ? 'disabled' : '' %>>
+          SOLICITAR SAQUE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Histórico & Provably Fair -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3>📜 Histórico & Auditoria Provably Fair</h3>
+        <button class="modal-close" data-close="historyModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Todas as rodadas são geradas com CSPRNG seguro e assinadas com Hash SHA-256 auditável.</p>
+        <div class="table-responsive">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Aposta</th>
+                <th>Ganho</th>
+                <th>Mult.</th>
+                <th>Hash Provably Fair (SHA-256)</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr><td colspan="5" style="text-align:center;">Carregando histórico...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/audio.js"></script>
+  <script src="/js/game/symbols.js"></script>
+  <script src="/js/game/slotCanvas.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
+

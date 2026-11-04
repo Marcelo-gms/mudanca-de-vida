@@ -1,0 +1,19 @@
+<header class="admin-topbar">
+  <div class="admin-brand">
+    <span class="tiger-emoji">🐯</span>
+    <div>
+      <div class="admin-title">TIGRINHO <span>ADMIN</span></div>
+      <div class="admin-sub">Painel de Controle e Gestão iGaming</div>
+    </div>
+  </div>
+
+  <nav class="admin-nav">
+    <a href="/admin" class="nav-item <%= activeTab === 'dashboard' ? 'active' : '' %>">📊 Visão Geral</a>
+    <a href="/admin/users" class="nav-item <%= activeTab === 'users' ? 'active' : '' %>">👥 Usuários</a>
+    <a href="/admin/rtp" class="nav-item <%= activeTab === 'rtp' ? 'active' : '' %>">⚙️ RTP & House Edge</a>
+    <a href="/admin/suitpay" class="nav-item <%= activeTab === 'suitpay' ? 'active' : '' %>">💳 SuitPay Sandbox</a>
+    <a href="/" class="nav-item nav-game" target="_blank">🎮 Abrir Jogo ↗</a>
+    <a href="/logout" class="nav-item nav-logout">🚪 Sair</a>
+  </nav>
+</header>
+

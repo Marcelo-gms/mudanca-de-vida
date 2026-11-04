@@ -1,0 +1,65 @@
+# Dependências do Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Variáveis de Ambiente e Segredos (NUNCA versionar)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!.env.example
+
+# Banco de Dados SQLite (arquivos locais e buffers WAL)
+data/*.sqlite
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+!data/.gitkeep
+
+# Logs e Processos
+logs/
+*.log
+*.pid
+*.seed
+
+# Arquivos de Testes e Cobertura
+coverage/
+.nyc_output/
+
+# Arquivos do Sistema Operacional
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Configurações de IDE e Editores
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Arquivos Temporários de Túnel (Ngrok / Localtunnel)
+.localtunnel/
+.ngrok/
+

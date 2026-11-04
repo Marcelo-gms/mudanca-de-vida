@@ -1,0 +1,33 @@
+{
+  "name": "tigrinho2",
+  "version": "1.0.0",
+  "description": "Mini Plataforma iGaming Monolítica (Node.js + EJS + Canvas)",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "init-db": "node scripts/initDb.js",
+    "simulate-rtp": "node scripts/simulate-rtp.js",
+    "tunnel": "node scripts/tunnel.js",
+    "tunnel:ngrok": "/snap/bin/ngrok http 3000",
+    "test": "node --test tests/**/*.test.js",
+    "test:concurrency": "node --test tests/concurrency.test.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^11.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "uuid": "^11.1.0",
+    "zod": "^4.6.7"
+  }
+}

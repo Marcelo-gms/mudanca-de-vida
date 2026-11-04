@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tigrinho Admin | SuitPay Sandbox & Webhooks</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <%- include('header') %>
+
+    <main class="admin-content">
+      <div class="page-title-row">
+        <div>
+          <h2>Integração Gateway SuitPay & Túnel Webhook</h2>
+          <p>Configure as chaves da API SuitPay (Sandbox ou Produção), teste a conectividade e exponha o webhook público.</p>
+        </div>
+      </div>
+
+      <div class="admin-grid-2">
+        <!-- Configuração SuitPay -->
+        <div class="admin-panel-card">
+          <div class="panel-card-head">
+            <h3>🔑 Credenciais e Modo de Operação</h3>
+          </div>
+
+          <form id="suitpayForm" class="mt-3">
+            <div class="form-group">
+              <label>Modo de Operação:</label>
+              <select id="suitpayMockMode" class="admin-input">
+                <option value="true" <%= suitpayConfig.isMock ? 'selected' : '' %>>🧪 Modo Mock (Simulação Local sem Chaves)</option>
+                <option value="false" <%= !suitpayConfig.isMock ? 'selected' : '' %>>⚡ Modo Real (SuitPay Sandbox / Produção)</option>
+              </select>
+              <small class="field-hint">Se ativado o modo real, as chamadas HTTP serão enviadas para a SuitPay.</small>
+            </div>
+
+            <div class="form-group">
+              <label>SUITPAY_CLIENT_ID (Header <code>ci</code>):</label>
+              <input
+                type="text"
+                id="suitpayClientId"
+                value="<%= suitpayConfig.clientId %>"
+                placeholder="Ex: seu_client_id_suitpay"
+                class="admin-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>SUITPAY_CLIENT_SECRET (Header <code>cs</code>):</label>
+              <input
+                type="password"
+                id="suitpayClientSecret"
+                value="<%= suitpayConfig.clientSecret %>"
+                placeholder="Ex: seu_client_secret_suitpay"
+                class="admin-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>URL Base da API:</label>
+              <input
+                type="text"
+                id="suitpayUrlBase"
+                value="<%= suitpayConfig.urlBase %>"
+                placeholder="https://ws.suitpay.app/api/v1/gateway"
+                class="admin-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>URL Pública do Webhook (Exposta via Túnel):</label>
+              <input
+                type="text"
+                id="publicWebhookUrl"
+                value="<%= suitpayConfig.publicWebhookUrl %>"
+                placeholder="Ex: https://seu-subdominio.loca.lt/api/webhooks/suitpay"
+                class="admin-input"
+              />
+              <small class="field-hint">Cadastre esta URL no painel de Webhooks da SuitPay para receber baixas automáticas de Pix.</small>
+            </div>
+
+            <div class="action-btn-row mt-4">
+              <button type="button" class="btn-secondary" id="btnTestSuitpay">
+                🔌 Testar Conexão (Ping)
+              </button>
+              <button type="submit" class="btn-primary">
+                💾 Salvar Credenciais
+              </button>
+            </div>
+          </form>
+
+          <!-- Status do Teste -->
+          <div id="testConnResult" class="mt-3" style="display: none;"></div>
+        </div>
+
+        <!-- Instruções de Túnel (Ngrok / Localtunnel) -->
+        <div class="admin-panel-card">
+          <div class="panel-card-head">
+            <h3>🌐 Configuração do Túnel Público (Ngrok / Localtunnel)</h3>
+          </div>
+          <p class="modal-desc">Para que a SuitPay consiga disparar o webhook de confirmação de pagamento para o seu ambiente local, execute um túnel HTTPS na porta 3000.</p>
+
+          <div class="tunnel-box">
+            <h4>Opção 1: Localtunnel (Sem cadastro, 100% automático)</h4>
+            <p>Execute no terminal:</p>
+            <code>npm run tunnel</code>
+            <p class="mt-2 text-muted">Ou manualmente: <code>npx localtunnel --port 3000</code></p>
+          </div>
+
+          <div class="tunnel-box mt-3">
+            <h4>Opção 2: Ngrok</h4>
+            <p>Se você possui conta no Ngrok, configure seu token e execute:</p>
+            <code>/snap/bin/ngrok http 3000</code>
+          </div>
+
+          <!-- Histórico de Webhooks -->
+          <div class="mt-4">
+            <h4>Últimos Depósitos Registrados:</h4>
+            <div class="table-responsive mt-2">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Ref. Externa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (recentWebhooks.length > 0) { %>
+                    <% recentWebhooks.forEach(w => { %>
+                      <tr>
+                        <td><%= new Date(w.created_at).toLocaleTimeString('pt-BR') %></td>
+                        <td>R$ <%= (w.amount_cents / 100).toFixed(2) %></td>
+                        <td>
+                          <span class="<%= w.status === 'COMPLETED' ? 'badge-success' : 'badge-warning' %>">
+                            <%= w.status %>
+                          </span>
+                        </td>
+                        <td><code><%= w.external_reference || w.id.substring(0, 8) + '...' %></code></td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr><td colspan="4" style="text-align: center;">Nenhum webhook recebido ainda.</td></tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Salvar Configurações
+    document.getElementById('suitpayForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        isMock: document.getElementById('suitpayMockMode').value === 'true',
+        clientId: document.getElementById('suitpayClientId').value,
+        clientSecret: document.getElementById('suitpayClientSecret').value,
+        urlBase: document.getElementById('suitpayUrlBase').value,
+        publicWebhookUrl: document.getElementById('publicWebhookUrl').value
+      };
+
+      try {
+        const res = await fetch('/admin/api/suitpay/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Configurações da SuitPay salvas com sucesso!');
+        } else {
+          alert(data.error);
+        }
+      } catch (err) {
+        alert('Erro ao salvar: ' + err.message);
+      }
+    });
+
+    // Testar Conexão
+    document.getElementById('btnTestSuitpay').addEventListener('click', async () => {
+      const btn = document.getElementById('btnTestSuitpay');
+      const resultBox = document.getElementById('testConnResult');
+      btn.disabled = true;
+      btn.textContent = 'Testando...';
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<span class="text-muted">Enviando requisição de teste...</span>';
+
+      try {
+        const res = await fetch('/admin/api/suitpay/test', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          resultBox.innerHTML = `
+            <div class="alert-success">
+              ✅ <strong>${data.mode}</strong>: ${data.message}
+            </div>
+          `;
+        } else {
+          resultBox.innerHTML = `
+            <div class="alert-error">
+              ❌ Falha no teste: ${data.message}
+            </div>
+          `;
+        }
+      } catch (err) {
+        resultBox.innerHTML = `<div class="alert-error">Erro: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔌 Testar Conexão (Ping)';
+      }
+    });
+  </script>
+</body>
+</html>
+
