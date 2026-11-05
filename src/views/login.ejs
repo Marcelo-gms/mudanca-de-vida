@@ -2,19 +2,24 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#22050a">
   <title>Tigrinho da Sorte | Entrar</title>
-  <link rel="stylesheet" href="/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="auth-body">
   <div class="auth-card">
     <div class="auth-header">
-      <div class="tiger-badge">🐯</div>
-      <h1>Tigrinho <span>da Sorte</span></h1>
+      <span class="bulbs" aria-hidden="true"></span>
+      <h1 class="marquee-title">
+        <span class="mt-main">Tigrinho</span>
+        <span class="mt-sub">★ da Sorte ★</span>
+      </h1>
       <p>Acesse sua conta para jogar</p>
+      <span class="bulbs bulbs-rev" aria-hidden="true"></span>
     </div>
 
     <% if (error) { %>
@@ -24,12 +29,12 @@
     <form action="/login" method="POST" class="auth-form">
       <div class="form-group">
         <label for="email">E-mail</label>
-        <input type="email" id="email" name="email" placeholder="seu@email.com" required value="demo@tigrinho.com">
+        <input type="email" id="email" name="email" placeholder="seu@email.com" required autocomplete="email" value="demo@tigrinho.com">
       </div>
 
       <div class="form-group">
         <label for="password">Senha</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required value="demo1234">
+        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" value="demo1234">
       </div>
 
       <div class="demo-hint">
@@ -46,4 +51,3 @@
   </div>
 </body>
 </html>
-
