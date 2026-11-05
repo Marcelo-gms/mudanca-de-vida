@@ -1,19 +1,41 @@
-<header class="admin-topbar">
-  <div class="admin-brand">
-    <span class="tiger-emoji">🐯</span>
-    <div>
-      <div class="admin-title">TIGRINHO <span>ADMIN</span></div>
-      <div class="admin-sub">Painel de Controle e Gestão iGaming</div>
-    </div>
+<%
+  const tabs = [
+    { id: 'dashboard', href: '/admin', label: 'Visão geral', icon: '<path d="M3 3h8v10H3zM13 3h8v6h-8zM13 11h8v10h-8zM3 15h8v6H3z"/>' },
+    { id: 'users', href: '/admin/users', label: 'Usuários', icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>' },
+    { id: 'rtp', href: '/admin/rtp', label: 'RTP & Edge', icon: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>' },
+    { id: 'suitpay', href: '/admin/suitpay', label: 'SuitPay', icon: '<path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM2 10h20M6 15h4"/>' }
+  ];
+  const gameIcon = '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>';
+  const logoutIcon = '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>';
+%>
+<header class="adm-mobilebar">
+  <a href="/admin" class="adm-brand">
+    <span class="adm-logo" aria-hidden="true">T</span>
+    <span class="adm-brand-text"><strong>Tigrinho</strong><small>Painel admin</small></span>
+  </a>
+  <div class="adm-mobile-actions">
+    <a href="/" class="adm-icon-btn" target="_blank" rel="noopener" aria-label="Abrir jogo"><svg viewBox="0 0 24 24" aria-hidden="true"><%- gameIcon %></svg></a>
+    <a href="/logout" class="adm-icon-btn danger" aria-label="Sair"><svg viewBox="0 0 24 24" aria-hidden="true"><%- logoutIcon %></svg></a>
   </div>
-
-  <nav class="admin-nav">
-    <a href="/admin" class="nav-item <%= activeTab === 'dashboard' ? 'active' : '' %>">📊 Visão Geral</a>
-    <a href="/admin/users" class="nav-item <%= activeTab === 'users' ? 'active' : '' %>">👥 Usuários</a>
-    <a href="/admin/rtp" class="nav-item <%= activeTab === 'rtp' ? 'active' : '' %>">⚙️ RTP & House Edge</a>
-    <a href="/admin/suitpay" class="nav-item <%= activeTab === 'suitpay' ? 'active' : '' %>">💳 SuitPay Sandbox</a>
-    <a href="/" class="nav-item nav-game" target="_blank">🎮 Abrir Jogo ↗</a>
-    <a href="/logout" class="nav-item nav-logout">🚪 Sair</a>
-  </nav>
 </header>
 
+<aside class="adm-sidebar">
+  <a href="/admin" class="adm-brand">
+    <span class="adm-logo" aria-hidden="true">T</span>
+    <span class="adm-brand-text"><strong>Tigrinho</strong><small>Painel admin</small></span>
+  </a>
+
+  <nav class="adm-nav" aria-label="Seções do painel">
+    <% tabs.forEach(t => { %>
+      <a href="<%= t.href %>" class="adm-nav-item <%= activeTab === t.id ? 'active' : '' %>" <%- activeTab === t.id ? 'aria-current="page"' : '' %>>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><%- t.icon %></svg>
+        <span><%= t.label %></span>
+      </a>
+    <% }) %>
+  </nav>
+
+  <div class="adm-side-foot">
+    <a href="/" class="adm-side-link" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><%- gameIcon %></svg><span>Abrir jogo</span></a>
+    <a href="/logout" class="adm-side-link danger"><svg viewBox="0 0 24 24" aria-hidden="true"><%- logoutIcon %></svg><span>Sair</span></a>
+  </div>
+</aside>

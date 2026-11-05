@@ -2,127 +2,120 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tigrinho Admin | Dashboard de Ganhos e Métricas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0507">
+  <title>Tigrinho Admin | Visão geral</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Orbitron:wght@600;800&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body class="admin-body">
   <div class="admin-wrapper">
     <%- include('header') %>
 
     <main class="admin-content">
-      <div class="page-title-row">
+      <header class="page-head">
         <div>
-          <h2>Painel Geral de Métricas e Desempenho</h2>
-          <p>Acompanhamento financeiro em tempo real, rentabilidade da casa (GGR) e indicadores matemáticos.</p>
+          <p class="page-kicker">Visão geral</p>
+          <h1>Métricas e desempenho</h1>
+          <p class="page-desc">Resultado financeiro da casa (GGR), volume apostado e indicadores matemáticos em tempo real.</p>
         </div>
-        <div>
-          <button class="btn-refresh" onclick="location.reload()">🔄 Atualizar Dados</button>
-        </div>
-      </div>
+        <button class="btn-ghost" type="button" onclick="location.reload()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5"/></svg>
+          Atualizar
+        </button>
+      </header>
 
-      <!-- KPI Cards Grid -->
-      <div class="kpi-grid">
-        <!-- GGR -->
-        <div class="kpi-card highlight-ggr">
-          <div class="kpi-header">
-            <span class="kpi-title">GGR (LUCRO DA BANCA)</span>
-            <span class="kpi-icon">💰</span>
+      <section class="kpi-grid" aria-label="Indicadores">
+        <article class="kpi-card feature" style="--tone: var(--gold)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg></span>
+            <span class="kpi-title">GGR · lucro da banca</span>
           </div>
-          <div class="kpi-value <%= metrics.ggrCents >= 0 ? 'color-green' : 'color-red' %>">
-            R$ <%= metrics.ggrFormatted %>
-          </div>
-          <div class="kpi-sub">Total Apostado (-) Total Pago aos Jogadores</div>
-        </div>
+          <div class="kpi-value <%= metrics.ggrCents >= 0 ? 'color-green' : 'color-red' %>">R$ <%= metrics.ggrFormatted %></div>
+          <div class="kpi-sub">Total apostado − total pago aos jogadores</div>
+        </article>
 
-        <!-- Turnover -->
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">VOLUME APOSTADO (TURNOVER)</span>
-            <span class="kpi-icon">🎰</span>
+        <article class="kpi-card" style="--tone: var(--blue)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
+            <span class="kpi-title">Volume apostado</span>
           </div>
           <div class="kpi-value">R$ <%= metrics.totalWageredFormatted %></div>
-          <div class="kpi-sub"><%= metrics.totalSpins.toLocaleString() %> giros computados</div>
-        </div>
+          <div class="kpi-sub"><%= metrics.totalSpins.toLocaleString('pt-BR') %> giros computados</div>
+        </article>
 
-        <!-- Payout -->
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">TOTAL RETORNADO (PAYOUT)</span>
-            <span class="kpi-icon">🏆</span>
+        <article class="kpi-card" style="--tone: var(--gold)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>
+            <span class="kpi-title">Total pago (payout)</span>
           </div>
           <div class="kpi-value color-gold">R$ <%= metrics.totalPayoutFormatted %></div>
-          <div class="kpi-sub"><%= metrics.totalWins.toLocaleString() %> rodadas com ganho</div>
-        </div>
+          <div class="kpi-sub"><%= metrics.totalWins.toLocaleString('pt-BR') %> rodadas com ganho</div>
+        </article>
 
-        <!-- RTP Real vs Alvo -->
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">RTP REAL MEDIDO</span>
-            <span class="kpi-icon">🎯</span>
+        <article class="kpi-card" style="--tone: var(--violet)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+            <span class="kpi-title">RTP real medido</span>
           </div>
           <div class="kpi-value"><%= metrics.realRtp %>%</div>
-          <div class="kpi-sub">Alvo Calibrado: <strong><%= metrics.targetRtp %>%</strong></div>
-        </div>
+          <div class="kpi-sub">Alvo calibrado: <strong><%= metrics.targetRtp %>%</strong></div>
+        </article>
 
-        <!-- House Edge -->
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">HOUSE EDGE (MARGEM DA CASA)</span>
-            <span class="kpi-icon">🏛️</span>
+        <article class="kpi-card" style="--tone: var(--green)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+            <span class="kpi-title">House edge</span>
           </div>
-          <div class="kpi-value color-green"><%= metrics.houseEdge %>%</div>
-          <div class="kpi-sub">Retenção Teórica Alvo: <strong><%= metrics.targetHouseEdge %>%</strong></div>
-        </div>
+          <div class="kpi-value <%= metrics.houseEdge >= 0 ? 'color-green' : 'color-red' %>"><%= metrics.houseEdge %>%</div>
+          <div class="kpi-sub">Retenção teórica alvo: <strong><%= metrics.targetHouseEdge %>%</strong></div>
+        </article>
 
-        <!-- Hit Frequency -->
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">HIT FREQUENCY (FREQ. DE VITÓRIA)</span>
-            <span class="kpi-icon">⚡</span>
+        <article class="kpi-card" style="--tone: var(--red)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></span>
+            <span class="kpi-title">Hit frequency</span>
           </div>
           <div class="kpi-value"><%= metrics.hitFrequency %>%</div>
           <div class="kpi-sub">Bônus Tigre da Sorte: <strong><%= metrics.bonusChance %>%</strong></div>
-        </div>
+        </article>
 
-        <!-- Depósitos -->
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">DEPÓSITOS APROVADOS (PIX)</span>
-            <span class="kpi-icon">📥</span>
+        <article class="kpi-card" style="--tone: var(--green)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></span>
+            <span class="kpi-title">Depósitos (Pix)</span>
           </div>
           <div class="kpi-value color-green">R$ <%= metrics.totalDepositedFormatted %></div>
-          <div class="kpi-sub">Via Gateway SuitPay</div>
-        </div>
+          <div class="kpi-sub">Aprovados via SuitPay</div>
+        </article>
 
-        <!-- Saques -->
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">SAQUES REALIZADOS (PIX)</span>
-            <span class="kpi-icon">📤</span>
+        <article class="kpi-card" style="--tone: var(--gold)">
+          <div class="kpi-head">
+            <span class="kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg></span>
+            <span class="kpi-title">Saques (Pix)</span>
           </div>
           <div class="kpi-value color-gold">R$ <%= metrics.totalWithdrawnFormatted %></div>
-          <div class="kpi-sub">Via Gateway SuitPay</div>
-        </div>
-      </div>
+          <div class="kpi-sub">Realizados via SuitPay</div>
+        </article>
+      </section>
 
-      <!-- Rodadas Recentes -->
-      <div class="admin-panel-card mt-4">
+      <section class="admin-panel-card mt-4">
         <div class="panel-card-head">
-          <h3>Últimas 10 Rodadas Jogadas na Plataforma</h3>
-          <a href="/admin/users" class="btn-link">Ver Jogadores →</a>
+          <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 2M3.05 11a9 9 0 1 1 .5 4M3 4v7h7"/></svg>Últimas 10 rodadas</h3>
+          <a href="/admin/users" class="btn-link">Ver jogadores →</a>
         </div>
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Data/Hora</th>
+                <th>Data/hora</th>
                 <th>Jogador</th>
                 <th>Aposta</th>
-                <th>Premiação</th>
-                <th>Multiplicador</th>
+                <th>Prêmio</th>
+                <th>Mult.</th>
                 <th>Resultado</th>
               </tr>
             </thead>
@@ -130,33 +123,30 @@
               <% if (recentRounds.length > 0) { %>
                 <% recentRounds.forEach(r => { %>
                   <tr>
-                    <td><%= new Date(r.created_at).toLocaleString('pt-BR') %></td>
-                    <td><strong><%= r.name %></strong> (<%= r.email %>)</td>
-                    <td>R$ <%= r.betFormatted %></td>
-                    <td class="<%= r.payout_cents > 0 ? 'color-green' : '' %>">
-                      R$ <%= r.payoutFormatted %>
-                    </td>
-                    <td><%= r.multiplier > 0 ? r.multiplier + 'x' : '-' %></td>
-                    <td>
+                    <td data-label="Data/hora"><%= new Date(r.created_at).toLocaleString('pt-BR') %></td>
+                    <td data-label="Jogador"><span class="user-cell"><strong><%= r.name %></strong><small class="text-muted"><%= r.email %></small></span></td>
+                    <td data-label="Aposta">R$ <%= r.betFormatted %></td>
+                    <td data-label="Prêmio" class="<%= r.payout_cents > 0 ? 'color-green' : '' %>">R$ <%= r.payoutFormatted %></td>
+                    <td data-label="Mult."><%= r.multiplier > 0 ? r.multiplier + 'x' : '-' %></td>
+                    <td data-label="Resultado">
                       <% if (r.payout_cents > 0) { %>
-                        <span class="badge-success">PREMIADO</span>
+                        <span class="badge-success">Premiado</span>
                       <% } else { %>
-                        <span class="badge-neutral">SEM GANHO</span>
+                        <span class="badge-neutral">Sem ganho</span>
                       <% } %>
                     </td>
                   </tr>
                 <% }) %>
               <% } else { %>
-                <tr>
-                  <td colspan="6" style="text-align: center;">Nenhum giro computado no momento.</td>
-                </tr>
+                <tr><td colspan="6" class="empty-cell">Nenhum giro computado ainda.</td></tr>
               <% } %>
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </main>
   </div>
+
+  <script src="/js/admin.js"></script>
 </body>
 </html>
-

@@ -1,6 +1,6 @@
 /**
  * Matriz de Configuração do Modelo PAR
- * Conforme ARCHITECTURE.md Seção 2.1
+ * Conforme docs/ARCHITECTURE.md Seção 2.1
  */
 const SYMBOLS = {
   TIGRE: {
