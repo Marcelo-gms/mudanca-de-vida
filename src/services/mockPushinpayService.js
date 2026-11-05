@@ -1,12 +1,13 @@
 /**
- * Mock Service para simulação local do SuitPay sem credenciais reais
+ * Mock Service para simulação local do PushinPay sem credenciais reais
  */
-class MockSuitpayService {
-  async requestPixQrCode({ requestNumber, dueDate, amount, client }) {
-    // Gera mock de chave Pix Copia e Cola padrão BACEN
-    const pixCopiaECola = `00020126580014br.gov.bcb.pix0136${requestNumber}520400005303986540${amount.toFixed(2)}5802BR5925${client.name.substring(0, 25)}6009SAO PAULO62070503***6304MOCK`;
-    
-    // QR Code em SVG simples codificado em Base64 para exibição limpa
+class MockPushinpayService {
+  async requestPixCashIn({ amountCents, webhookUrl }) {
+    const id = `mock_pushin_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const amountFloat = (amountCents / 100).toFixed(2);
+    const pixCopiaECola = `00020126580014br.gov.bcb.pix0136${id}520400005303986540${amountFloat}5802BR5925TIGRINHO PUSHINPAY6009SAO PAULO62070503***6304MOCK`;
+
+    // QR Code em SVG Base64 estilizado com logo PushinPay
     const svgQrCode = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
       <rect width="200" height="200" fill="#ffffff" />
       <!-- Top Left Marker -->
@@ -24,8 +25,8 @@ class MockSuitpayService {
       <!-- Mock Pixel pattern -->
       <rect x="80" y="25" width="15" height="15" fill="#111"/>
       <rect x="100" y="45" width="15" height="15" fill="#111"/>
-      <rect x="85" y="85" width="30" height="30" fill="#FF8C00"/>
-      <text x="100" y="105" font-family="sans-serif" font-size="16" text-anchor="middle" fill="#fff">PIX</text>
+      <rect x="75" y="80" width="50" height="40" fill="#6366f1" rx="4"/>
+      <text x="100" y="105" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#fff">PUSHIN</text>
       <rect x="135" y="100" width="15" height="15" fill="#111"/>
       <rect x="80" y="140" width="20" height="20" fill="#111"/>
       <rect x="120" y="140" width="15" height="15" fill="#111"/>
@@ -33,27 +34,30 @@ class MockSuitpayService {
     </svg>`;
 
     const base64Svg = Buffer.from(svgQrCode).toString('base64');
-    const paymentCodeBase64 = `data:image/svg+xml;base64,${base64Svg}`;
+    const qrCodeBase64 = `data:image/svg+xml;base64,${base64Svg}`;
 
     return {
-      response: 'OK',
-      idTransaction: `mock_tx_${Date.now()}`,
-      requestNumber,
-      paymentCode: pixCopiaECola,
-      paymentCodeBase64
+      id,
+      qr_code: pixCopiaECola,
+      status: 'created',
+      value: amountCents,
+      webhook_url: webhookUrl,
+      qr_code_base64: qrCodeBase64
     };
   }
 
-  async requestPixPayment({ key, typeKey, value }) {
-    // Simula resposta de sucesso de saque
+  async requestPixCashOut({ amountCents, pixKey, receiverDocument, webhookUrl }) {
     return {
-      response: 'OK',
-      idTransaction: `mock_payout_${Date.now()}`,
-      status: 'PAID',
+      id: `mock_cashout_${Date.now()}`,
+      status: 'paid',
+      value: amountCents,
+      pix_key: pixKey,
+      pix_key_type: 'national_registration',
+      receiver_national_registration: receiverDocument,
       message: 'Transferência Pix mock realizada com sucesso.'
     };
   }
 }
 
-module.exports = new MockSuitpayService();
+module.exports = new MockPushinpayService();
 

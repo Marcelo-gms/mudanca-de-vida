@@ -8,10 +8,9 @@ const DEFAULT_SETTINGS = {
   symbol_weights: JSON.stringify({ TIGRE: 2, MOEDA: 8, BARRA: 20, LARANJA: 70 }),
   min_deposit_cents: '500',
   min_withdraw_cents: '1000',
-  suitpay_client_id: env.suitpay.clientId || '',
-  suitpay_client_secret: env.suitpay.clientSecret || '',
-  suitpay_url_base: env.suitpay.urlBase || 'https://ws.suitpay.app/api/v1/gateway',
-  suitpay_mock_mode: String(env.suitpay.enableMock),
+  pushinpay_token: env.pushinpay?.token || '',
+  pushinpay_url_base: env.pushinpay?.urlBase || 'https://api.pushinpay.com.br/api',
+  pushinpay_mock_mode: String(env.pushinpay?.enableMock ?? true),
   public_webhook_url: ''
 };
 
@@ -94,16 +93,19 @@ class SettingsService {
     return parseFloat(this.get('rollover_factor')) || 1.0;
   }
 
-  getSuitpayConfig() {
+  getPushinpayConfig() {
     return {
-      clientId: this.get('suitpay_client_id'),
-      clientSecret: this.get('suitpay_client_secret'),
-      urlBase: this.get('suitpay_url_base'),
-      isMock: this.get('suitpay_mock_mode') === 'true',
+      token: this.get('pushinpay_token'),
+      urlBase: this.get('pushinpay_url_base'),
+      isMock: this.get('pushinpay_mock_mode') === 'true',
       publicWebhookUrl: this.get('public_webhook_url')
     };
+  }
+
+  // Compatibilidade legada
+  getSuitpayConfig() {
+    return this.getPushinpayConfig();
   }
 }
 
 module.exports = new SettingsService();
-

@@ -5,15 +5,13 @@ const env = {
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   sessionSecret: process.env.SESSION_SECRET || 'tigrinho-monolith-fallback-secret-key-12345',
-  suitpay: {
-    clientId: process.env.SUITPAY_CLIENT_ID || '',
-    clientSecret: process.env.SUITPAY_CLIENT_SECRET || '',
-    urlBase: process.env.SUITPAY_URL_BASE || 'https://ws.suitpay.app/api/v1/gateway',
-    enableMock: process.env.ENABLE_SUITPAY_MOCK === 'true' || !process.env.SUITPAY_CLIENT_ID
+  pushinpay: {
+    token: process.env.PUSHINPAY_TOKEN || '',
+    urlBase: process.env.PUSHINPAY_URL_BASE || 'https://api.pushinpay.com.br/api',
+    enableMock: process.env.ENABLE_PUSHINPAY_MOCK === 'true' || !process.env.PUSHINPAY_TOKEN || process.env.PUSHINPAY_TOKEN === 'mock_pushinpay_token'
   },
   rolloverFactor: parseFloat(process.env.ROLLOVER_FACTOR) || 1.0,
   dbFile: process.env.DB_FILE || 'data/tigrinho.sqlite'
 };
 
 module.exports = env;
-

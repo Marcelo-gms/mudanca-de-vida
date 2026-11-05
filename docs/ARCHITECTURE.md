@@ -1,6 +1,6 @@
 # Especificação Técnica: Mini Plataforma iGaming Monolítica (Node.js + EJS + Canvas)
 
-Este documento atua como o **Plano de Contexto e Arquitetura** para desenvolvimento assistido por Inteligência Artificial no VS Code. Ele define as diretrizes matemáticas, de infraestrutura com a gateway **SuitPay**, e travas críticas de SecOps.
+Este documento atua como o **Plano de Contexto e Arquitetura** para desenvolvimento assistido por Inteligência Artificial no VS Code. Ele define as diretrizes matemáticas, de infraestrutura com a gateway **PushinPay**, e travas críticas de SecOps.
 
 ---
 
@@ -15,7 +15,7 @@ A aplicação é estruturada como um monolito único em Node.js usando Express, 
 [Servidor Express Monolítico] 
       ├── Módulo 1: Motor Matemático (CSPRNG Criptográfico)
       ├── Módulo 2: Motor de Carteira & Transações (Seamless Interno)
-      └── Módulo 3: Integração via API/Webhooks com a SUITPAY
+      └── Módulo 3: Integração via API/Webhooks com a PushinPay
 ```
 
 ---
@@ -64,24 +64,39 @@ function gerarSimboloAleatorio() {
 
 ---
 
-## 3. Integração com a Gateway SuitPay
+## 3. Integração com a Gateway PushinPay
 
-A comunicação financeira de Pay-in (Depósito) e Pay-out (Saque) utiliza estritamente o protocolo da SuitPay com credenciais injetadas via variáveis de ambiente (`process.env`).
+A comunicação financeira de Pay-in (Depósito) e Pay-out (Saque) utiliza o protocolo REST da PushinPay com Bearer Token injetado via variáveis de ambiente (`process.env`) ou configurado dinamicamente no painel administrativo `/admin/pushinpay`.
 
-### 3.1 Credenciais Obrigatórias
-*   `SUITPAY_CLIENT_ID` (Passado no cabeçalho HTTP como `ci`)
-*   `SUITPAY_CLIENT_SECRET` (Passado no cabeçalho HTTP como `cs`)
-*   `SUITPAY_URL_BASE`: `https://ws.suitpay.app/api/v1/gateway`
+### 3.1 Credenciais e Configuração
+*   `PUSHINPAY_TOKEN`: Bearer token de autenticação (enviado no header `Authorization: Bearer <TOKEN>`)
+*   `PUSHINPAY_URL_BASE`: 
+    *   Produção: `https://api.pushinpay.com.br/api`
+    *   Sandbox: `https://api-sandbox.pushinpay.com.br/api`
+*   `ENABLE_PUSHINPAY_MOCK`: Booleano para simular QR Codes e saques localmente sem token ativo.
 
 ### 3.2 Endpoints e Payloads Mapeados
 
 #### A. Pay-in (Geração de Pix Copia e Cola / QR Code)
-*   **Endpoint:** `POST /request-qrcode`
-*   **Campos Requeridos no Body:** `requestNumber`, `dueDate`, `amount`, `client` (objeto contendo `name`, `document` (CPF), `email`).
+*   **Endpoint:** `POST /api/pix/cashIn`
+*   **Campos Requeridos no Body:** 
+    *   `value` (inteiro em centavos, ex: R$ 20,00 = `2000`)
+    *   `webhook_url` (URL de retorno para notificação instantânea)
+*   **Retorno:** Objeto com `id` (armazenado como `external_reference`), `qr_code` (Pix copia e cola), `qr_code_base64` e `status: "created"`.
 
-#### B. Pay-out (Envio de Saque Automatizado)
-*   **Endpoint:** `POST /pix-payment`
-*   **Campos Requeridos no Body:** `key` (chave Pix), `typeKey` (CPF, EMAIL, PHONE, etc.), `value` (valor em float).
+#### B. Pay-out (Envio de Saque Automatizado via Pix)
+*   **Endpoint:** `POST /api/pix/cashOut`
+*   **Campos Requeridos no Body:** 
+    *   `value` (inteiro em centavos)
+    *   `pix_key` (chave Pix, obrigatoriamente o CPF do titular)
+    *   `pix_key_type`: `"national_registration"` (CPF)
+    *   `receiver_national_registration`: Documento do recebedor (deve ser idêntico ao CPF cadastrado)
+    *   `webhook_url`: URL de confirmação do cash-out.
+
+#### C. Webhook de Confirmação de Pagamento
+*   **Endpoint da Aplicação:** `POST /api/webhooks/pushinpay`
+*   **Payload Recebido:** `{ id: number, status: "paid", value: number, end_to_end_id: string }`
+*   **Processamento Idempotente:** A transação é localizada pelo `external_reference` (o `id` retornado no cashIn). Se já estiver paga, responde HTTP 200 `{ status: "ALREADY_PROCESSED" }`. Quando confirmada, credita o saldo atomicamente e registra o `end_to_end_id` nos metadados.
 
 ---
 
@@ -91,16 +106,16 @@ Para mitigar fraudes de abuso de bônus, ataques de concorrência ou brechas reg
 
 ### 4.1 Controle Extremo de Concorrência (Prevenção de Race Condition / Double Spending)
 *   **Risco:** O usuário clica simultaneamente em "Girar" ou "Sacar" usando múltiplos disparos assíncronos. Se o saldo for lido antes que a requisição anterior termine, o saldo ficará negativo.
-*   **Solução:** Sempre que a rota `/api/spin` ou `/api/payout` for acionada, o registro do usuário no banco de dados deve ser processado utilizando um bloqueio de linha mutável (`SELECT ... FOR UPDATE` no SQL ou travas de transação via Redis). O saldo deve ser decrementado **antes** do cálculo do PRNG ou da chamada externa da SuitPay.
+*   **Solução:** Sempre que a rota `/api/spin` ou `/api/wallet/withdraw` for acionada, a transação SQLite/WAL deve ser aberta no modo imediato (`db.transaction(...).immediate()`). O saldo deve ser decrementado **antes** do cálculo do PRNG ou da chamada externa de saque da PushinPay.
 
 ### 4.2 Regra de Rollover Estrita (Giro de Saldo)
 *   **Risco:** Usuário deposita via Pix, não joga, e solicita o saque imediatamente para limpar dinheiro de origem ilícita, gerando custo de taxas para a plataforma.
-*   **Solução:** Cada usuário possui os campos `total_depositado` e `total_apostado` em seu perfil. A rota de saque deve recusar a transação caso a validação abaixo falhe:
-    $$	ext{total\_apostado} < 	ext{total\_depositado} 	imes 	ext{FatorRollover (padrão: 1.0)}$$
+*   **Solução:** Cada usuário possui os campos `total_deposited` e `total_bet` em seu perfil. A rota de saque recusa a transação caso a validação abaixo falhe:
+    $$\text{total\_bet} < \text{total\_deposited} \times \text{FatorRollover (padrão: 1.0)}$$
 
 ### 4.3 Trava de CPF Casado (Anti-Fraude de Saque)
 *   **Risco:** Alguém descobre a senha de um usuário e solicita um saque transferindo o saldo para uma chave Pix de terceiros.
-*   **Solução:** O sistema só permite saques onde o tipo de chave seja `CPF` e o valor da chave corresponda exatamente ao CPF cadastrado pelo usuário (e validado no ato do depósito com a SuitPay). É proibido enviar Payout para CPFs divergentes do titular da conta na plataforma.
+*   **Solução:** O sistema só permite saques onde o tipo de chave seja `CPF` e o valor da chave corresponda exatamente ao CPF cadastrado pelo usuário (e validado pela PushinPay na transferência). É estritamente proibido enviar Payout para CPFs divergentes do titular da conta na plataforma.
 
 ---
 
@@ -108,10 +123,10 @@ Para mitigar fraudes de abuso de bônus, ataques de concorrência ou brechas reg
 
 *Utilize este comando sempre que iniciar uma nova funcionalidade no chat do Gemini no VS Code:*
 
-> "Aja como um engenheiro de software especialista in iGaming. Leia e siga estritamente a arquitetura descrita em `docs/ARCHITECTURE.md`. Toda lógica matemática de rolos deve herdar o modelo CSPRNG e a configuração PAR descrita no pilar 2. Não utilize Math.random. Toda rota financeira de saque ou giro criada no Express deve implementar nativamente as proteções de concorrência e as travas de CPF/Rollover descritas no pilar 4. Escreva códigos limpos, performáticos e integre-os à nossa estrutura monolítica."
+> "Aja como um engenheiro de software especialista em iGaming. Leia e siga estritamente a arquitetura descrita em `docs/ARCHITECTURE.md`. Toda lógica matemática de rolos deve herdar o modelo CSPRNG e a configuração PAR descrita no pilar 2. Não utilize Math.random. Toda rota financeira de saque ou giro criada no Express deve implementar nativamente as proteções de concorrência e as travas de CPF/Rollover descritas no pilar 4. Escreva códigos limpos, performáticos e integre-os à nossa estrutura monolítica."
 
 ---
 ## 6. Referências Técnicas para Alinhamento Lógico da IA
 A IA deve usar os padrões lógicos estruturais destes modelos conceituais para guiar o desenvolvimento das funções:
+*   [Documentação Oficial da PushinPay](https://pushinpay.com.br/)
 *   [Lógica de Provably Fair Criptográfico (SHA-256/HMAC)](https://github.com/brave/provably-fair)
-*   [Padrões de Comunicação Webhook e Segurança Financeira](https://github.com/AstrotechLabs/suitpay-sdk)

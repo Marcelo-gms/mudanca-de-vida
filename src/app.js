@@ -60,7 +60,7 @@ app.get('/', authMiddleware, (req, res) => {
   res.render('index', {
     user: req.user,
     wallet,
-    isMockEnabled: env.suitpay.enableMock
+    isMockEnabled: env.pushinpay.enableMock
   });
 });
 

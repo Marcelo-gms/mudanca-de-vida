@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const walletService = require('../services/walletService');
-const suitpayService = require('../services/suitpayService');
+const pushinpayService = require('../services/pushinpayService');
 const { db } = require('../config/database');
 
 class WalletController {
@@ -37,35 +37,34 @@ class WalletController {
         txId,
         req.user.id,
         parsedAmount,
-        JSON.stringify({ requestedAt: new Date().toISOString() })
+        JSON.stringify({ requestedAt: new Date().toISOString(), gateway: 'PushinPay' })
       );
 
-      // Solicita QR Code na SuitPay
-      const suitpayResponse = await suitpayService.requestPixQrCode({
-        requestNumber: txId,
-        amountCents: parsedAmount,
-        user: req.user
+      // Solicita Cobrança Pix na PushinPay
+      const pushinpayResponse = await pushinpayService.requestPixCashIn({
+        amountCents: parsedAmount
       });
 
-      // Salva referência externa da SuitPay
-      if (suitpayResponse?.idTransaction) {
+      // Salva referência externa do ID da transação na PushinPay
+      if (pushinpayResponse?.id) {
         db.prepare(`
           UPDATE transactions
           SET external_reference = ?
           WHERE id = ?
-        `).run(suitpayResponse.idTransaction, txId);
+        `).run(pushinpayResponse.id, txId);
       }
 
       return res.json({
         success: true,
         transactionId: txId,
+        externalId: pushinpayResponse.id,
         amountFormatted: (parsedAmount / 100).toFixed(2),
-        paymentCode: suitpayResponse.paymentCode,
-        paymentCodeBase64: suitpayResponse.paymentCodeBase64
+        paymentCode: pushinpayResponse.qr_code,
+        paymentCodeBase64: pushinpayResponse.qr_code_base64
       });
     } catch (err) {
       console.error('[Deposit Error]:', err);
-      return res.status(400).json({ error: err.message || 'Falha ao gerar Pix para depósito.' });
+      return res.status(400).json({ error: err.message || 'Falha ao gerar Pix para depósito via PushinPay.' });
     }
   }
 
@@ -79,7 +78,7 @@ class WalletController {
         return res.status(400).json({ error: 'O valor mínimo para saque é de R$ 10,00.' });
       }
 
-      // 1. Validações e bloqueio atômico com travas de CPF e Rollover
+      // 1. Validações e bloqueio atômico com travas de CPF e Rollover (SecOps 4.1, 4.2 e 4.3)
       reservation = walletService.reserveWithdrawal(
         req.user.id,
         parsedAmount,
@@ -87,18 +86,18 @@ class WalletController {
         pixType
       );
 
-      // 2. Dispara pagamento na SuitPay
-      const payoutResult = await suitpayService.requestPixPayment({
-        key: reservation.pixKey,
-        typeKey: reservation.pixType,
-        amountCents: parsedAmount
+      // 2. Dispara transferência Pix de Saque na PushinPay
+      const payoutResult = await pushinpayService.requestPixCashOut({
+        amountCents: parsedAmount,
+        pixKey: reservation.pixKey,
+        receiverDocument: reservation.user.document.replace(/\D/g, '')
       });
 
       // 3. Finaliza com sucesso
       walletService.finalizeWithdrawal(
         reservation.transactionId,
         true,
-        payoutResult.idTransaction || null
+        payoutResult?.id || null
       );
 
       const updatedWallet = walletService.getUserWallet(req.user.id);
@@ -112,7 +111,7 @@ class WalletController {
     } catch (err) {
       console.error('[Withdraw Error]:', err.message);
 
-      // Se a reserva chegou a ser feita e falhou no envio externo, efetua o estorno
+      // Se a reserva chegou a ser feita e falhou no envio externo, efetua o estorno atômico
       if (reservation?.transactionId) {
         walletService.finalizeWithdrawal(reservation.transactionId, false, null, err.message);
       }
@@ -127,7 +126,7 @@ class WalletController {
   getTransactions(req, res) {
     try {
       const txs = db.prepare(`
-        SELECT id, type, amount_cents, status, created_at
+        SELECT id, type, amount_cents, status, created_at, external_reference
         FROM transactions
         WHERE user_id = ?
         ORDER BY created_at DESC
@@ -148,4 +147,3 @@ class WalletController {
 }
 
 module.exports = new WalletController();
-

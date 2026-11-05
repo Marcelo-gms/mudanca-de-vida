@@ -285,7 +285,7 @@ class WalletService {
   }
 
   /**
-   * Credita depósito confirmado via Webhook da SuitPay
+   * Credita depósito confirmado via Webhook da PushinPay
    */
   creditDeposit(transactionId, amountCents, externalRef = null) {
     const executeCredit = db.transaction(() => {
@@ -306,13 +306,21 @@ class WalletService {
         WHERE id = ?
       `).run(amountCents, amountCents, tx.user_id);
 
+      const finalExtRef = tx.external_reference || externalRef;
+      let metadataObj = {};
+      try { metadataObj = JSON.parse(tx.metadata || '{}'); } catch(e) {}
+      if (externalRef && externalRef !== finalExtRef) {
+        metadataObj.end_to_end_id = externalRef;
+      }
+
       db.prepare(`
         UPDATE transactions
         SET status = 'COMPLETED',
             external_reference = ?,
+            metadata = ?,
             updated_at = datetime('now')
         WHERE id = ?
-      `).run(externalRef, transactionId);
+      `).run(finalExtRef, JSON.stringify(metadataObj), transactionId);
 
       return {
         alreadyProcessed: false,

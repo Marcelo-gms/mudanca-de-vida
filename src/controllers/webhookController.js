@@ -1,39 +1,44 @@
 const walletService = require('../services/walletService');
 const { db } = require('../config/database');
+const settingsService = require('../services/settingsService');
 const env = require('../config/env');
 
 class WebhookController {
   /**
-   * Endpoint de Webhook oficial da SuitPay
-   * POST /api/webhooks/suitpay
+   * Endpoint de Webhook oficial da PushinPay
+   * POST /api/webhooks/pushinpay (ou /api/webhooks/suitpay para compatibilidade)
    */
-  async handleSuitpayWebhook(req, res) {
+  async handlePushinpayWebhook(req, res) {
     try {
       const payload = req.body;
-      console.log('[Webhook Received from SuitPay]:', payload);
+      console.log('[Webhook Received from PushinPay]:', payload);
 
-      // O identificador da transação é passado como requestNumber ou idTransaction
-      const requestNumber = payload.requestNumber || payload.custom_id || payload.id;
-      const status = (payload.statusTransaction || payload.status || '').toUpperCase();
-      const idTransaction = payload.idTransaction || null;
+      // O identificador da transação é passado no campo 'id' da PushinPay
+      const externalId = payload.id || payload.transaction_id || payload.requestNumber;
+      const status = (payload.status || payload.statusTransaction || '').toLowerCase();
+      const endToEndId = payload.end_to_end_id || null;
 
-      if (!requestNumber) {
-        return res.status(400).json({ error: 'Identificador requestNumber ausente.' });
+      if (!externalId) {
+        return res.status(400).json({ error: 'Identificador id ausente no payload.' });
       }
 
-      // Procura a transação no banco de dados
-      const tx = db.prepare(`SELECT * FROM transactions WHERE id = ?`).get(requestNumber);
+      // Procura a transação no banco de dados por external_reference ou pelo ID interno
+      const tx = db.prepare(`
+        SELECT * FROM transactions
+        WHERE external_reference = ? OR id = ?
+      `).get(externalId, externalId);
+
       if (!tx) {
-        console.warn(`[Webhook Warning] Transação ${requestNumber} não encontrada no banco.`);
+        console.warn(`[Webhook Warning] Transação ${externalId} não encontrada no banco.`);
         return res.status(404).json({ error: 'Transação não encontrada.' });
       }
 
-      // Se o status for de pagamento aprovado ('PAID', 'PAID_OUT', 'COMPLETED')
-      if (['PAID', 'PAID_OUT', 'COMPLETED', 'CONFIRMED'].includes(status)) {
+      // Se o status for de pagamento aprovado ('paid' no PushinPay)
+      if (['paid', 'completed', 'confirmed'].includes(status)) {
         const creditResult = walletService.creditDeposit(
           tx.id,
           tx.amount_cents,
-          idTransaction
+          endToEndId || externalId
         );
 
         if (creditResult.alreadyProcessed) {
@@ -41,7 +46,7 @@ class WebhookController {
           return res.status(200).json({ status: 'ALREADY_PROCESSED' });
         }
 
-        console.log(`[Webhook Success] Depósito de R$ ${(tx.amount_cents / 100).toFixed(2)} creditado para o usuário ${tx.user_id}`);
+        console.log(`[Webhook Success] Depósito PushinPay de R$ ${(tx.amount_cents / 100).toFixed(2)} creditado para o usuário ${tx.user_id}`);
         return res.status(200).json({ status: 'SUCCESS' });
       }
 
@@ -52,22 +57,34 @@ class WebhookController {
     }
   }
 
+  // Compatibilidade com método antigo
+  async handleSuitpayWebhook(req, res) {
+    return this.handlePushinpayWebhook(req, res);
+  }
+
   /**
    * Endpoint para simulação de pagamento em ambiente de testes/desenvolvimento
    * POST /api/webhooks/mock-pay
    */
   async handleMockPay(req, res) {
-    if (!env.suitpay.enableMock && env.nodeEnv === 'production') {
+    const config = settingsService.getPushinpayConfig();
+    if (!config.isMock && env.nodeEnv === 'production') {
       return res.status(403).json({ error: 'Mock desativado em produção.' });
     }
 
     try {
-      const { requestNumber } = req.body;
-      if (!requestNumber) {
-        return res.status(400).json({ error: 'requestNumber obrigatório.' });
+      const { requestNumber, id } = req.body;
+      const txIdOrRef = requestNumber || id;
+
+      if (!txIdOrRef) {
+        return res.status(400).json({ error: 'Identificador da transação obrigatório.' });
       }
 
-      const tx = db.prepare(`SELECT * FROM transactions WHERE id = ?`).get(requestNumber);
+      const tx = db.prepare(`
+        SELECT * FROM transactions
+        WHERE id = ? OR external_reference = ?
+      `).get(txIdOrRef, txIdOrRef);
+
       if (!tx) {
         return res.status(404).json({ error: 'Transação não encontrada.' });
       }
@@ -75,12 +92,12 @@ class WebhookController {
       const creditResult = walletService.creditDeposit(
         tx.id,
         tx.amount_cents,
-        `mock_external_${Date.now()}`
+        `mock_pushin_${Date.now()}`
       );
 
       return res.json({
         success: true,
-        message: 'Depósito mock creditado com sucesso!',
+        message: 'Depósito mock PushinPay creditado com sucesso!',
         alreadyProcessed: creditResult.alreadyProcessed,
         amountFormatted: (tx.amount_cents / 100).toFixed(2)
       });
@@ -92,4 +109,3 @@ class WebhookController {
 }
 
 module.exports = new WebhookController();
-
