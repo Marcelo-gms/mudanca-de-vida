@@ -27,9 +27,10 @@ O **Tigrinho2** é uma mini-plataforma iGaming monolítica em **Node.js + Expres
    - Gestão de Usuários: Ajuste manual de saldo, liberação de rollover, bloqueio e papéis (Admin/User).
    - Calibração de RTP, House Edge, frequências de bônus e pesos em tempo real sem reiniciar o servidor.
 5. **Front-End Monolítico**:
-   - Renderização EJS com layout temático asiático (Dark Red & Gold) responsivo mobile-first.
-   - Canvas HTML5 a 60 FPS com desaceleração física sequencial dos rolos (Rolo 1 -> 2 -> 3), partículas e linhas premiadas.
+   - Renderização EJS com visual de gabinete de caça-níquel físico (letreiro com lâmpadas, LEDs, alavanca, bandeja de moedas), responsivo mobile-first. Detalhes em `docs/REMAKE_VISUAL.md`.
+   - Canvas HTML5 a 60 FPS com rolos em tambor, arranque com recuo, frenagem com quique, parada sequencial (Rolo 1 -> 2 -> 3), suspense no 3º rolo, linhas premiadas e chuva de moedas.
    - Efeitos sonoros sintetizados nativamente via Web Audio API (sem dependência de arquivos `.mp3`).
+6. **Docker Compose**: `docker compose up -d --build` sobe tudo com Node 22 e SQLite em volume. Ver `docs/DOCKER.md`.
 
 ---
 
@@ -69,10 +70,13 @@ Qualquer código novo ou refatoração DEVE respeitar estas 6 diretrizes absolut
 ```
 tigrinho2/
 ├── package.json               # Configurações, dependências e scripts npm
+├── Dockerfile / docker-compose.yml # Subida via Docker (ver docs/DOCKER.md)
 ├── .env / .env.example        # Variáveis de ambiente (PORT, SuitPay, Rollover)
 ├── docs/
 │   ├── AI_GUIDE.md            # Este documento de orientação
-│   └── ARCHITECTURE.md        # Especificação técnica original do projeto
+│   ├── ARCHITECTURE.md        # Especificação técnica original do projeto
+│   ├── DOCKER.md              # Como subir com Docker Compose
+│   └── REMAKE_VISUAL.md       # Decisões do remake visual do front-end
 ├── src/
 │   ├── app.js                 # Express, Helmet, Session, EJS e montagem de rotas
 │   ├── server.js              # Inicialização do listener HTTP (binding 0.0.0.0)
@@ -116,14 +120,14 @@ tigrinho2/
 │           └── suitpay.ejs    # Configuração e testes da Sandbox SuitPay
 ├── public/
 │   ├── css/
-│   │   ├── style.css          # Estilo visual do jogo (tema Dark Red & Gold)
+│   │   ├── style.css          # Estilo do gabinete do caça-níquel
 │   │   └── admin.css          # Estilo completo do painel administrativo
 │   └── js/
 │       ├── audio.js           # Sintetizador Web Audio API nativo
 │       ├── app.js             # Gerenciador de eventos, apostas e modais
 │       └── game/
 │           ├── symbols.js     # Desenho vetorial dos símbolos no Canvas
-│           └── slotCanvas.js  # Física de giro e renderização do Canvas a 60 FPS
+│           └── slotCanvas.js  # Rolos em tambor, física de giro e chuva de moedas
 ├── scripts/
 │   ├── initDb.js              # Inicializa schema e contas demo/admin
 │   ├── simulate-rtp.js        # Simulação Monte Carlo CLI de 100.000 giros
