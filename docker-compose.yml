@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    container_name: tigrinho
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_FILE: data/tigrinho.sqlite
+    volumes:
+      - tigrinho-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  tigrinho-data:

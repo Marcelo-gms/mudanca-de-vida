@@ -108,7 +108,7 @@ Para mitigar fraudes de abuso de bônus, ataques de concorrência ou brechas reg
 
 *Utilize este comando sempre que iniciar uma nova funcionalidade no chat do Gemini no VS Code:*
 
-> "Aja como um engenheiro de software especialista in iGaming. Leia e siga estritamente a arquitetura descrita em `ARCHITECTURE.md`. Toda lógica matemática de rolos deve herdar o modelo CSPRNG e a configuração PAR descrita no pilar 2. Não utilize Math.random. Toda rota financeira de saque ou giro criada no Express deve implementar nativamente as proteções de concorrência e as travas de CPF/Rollover descritas no pilar 4. Escreva códigos limpos, performáticos e integre-os à nossa estrutura monolítica."
+> "Aja como um engenheiro de software especialista in iGaming. Leia e siga estritamente a arquitetura descrita em `docs/ARCHITECTURE.md`. Toda lógica matemática de rolos deve herdar o modelo CSPRNG e a configuração PAR descrita no pilar 2. Não utilize Math.random. Toda rota financeira de saque ou giro criada no Express deve implementar nativamente as proteções de concorrência e as travas de CPF/Rollover descritas no pilar 4. Escreva códigos limpos, performáticos e integre-os à nossa estrutura monolítica."
 
 ---
 ## 6. Referências Técnicas para Alinhamento Lógico da IA

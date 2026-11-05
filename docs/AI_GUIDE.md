@@ -70,8 +70,9 @@ Qualquer código novo ou refatoração DEVE respeitar estas 6 diretrizes absolut
 tigrinho2/
 ├── package.json               # Configurações, dependências e scripts npm
 ├── .env / .env.example        # Variáveis de ambiente (PORT, SuitPay, Rollover)
-├── AI_GUIDE.md                # Este documento de orientação
-├── ARCHITECTURE.md            # Especificação técnica original do projeto
+├── docs/
+│   ├── AI_GUIDE.md            # Este documento de orientação
+│   └── ARCHITECTURE.md        # Especificação técnica original do projeto
 ├── src/
 │   ├── app.js                 # Express, Helmet, Session, EJS e montagem de rotas
 │   ├── server.js              # Inicialização do listener HTTP (binding 0.0.0.0)
@@ -178,5 +179,5 @@ npm run tunnel:ngrok
 
 Ao iniciar uma nova sessão ou funcionalidade neste projeto, copie e envie o seguinte prompt para a IA:
 
-> *"Aja como um engenheiro de software sênior especialista em iGaming e Node.js. Leia e siga estritamente as regras de arquitetura e SecOps descritas em `AI_GUIDE.md` e `ARCHITECTURE.md`. Toda lógica matemática deve utilizar o motor CSPRNG nativo sem Math.random(). Toda operação financeira de saldo ou giro deve utilizar travas atômicas imediatas no banco. Respeite as travas de CPF Casado, Rollover Estrito e Idempotência de Webhook. Escreva códigos limpos, performáticos e com cobertura de testes automatizados."*
+> *"Aja como um engenheiro de software sênior especialista em iGaming e Node.js. Leia e siga estritamente as regras de arquitetura e SecOps descritas em `docs/AI_GUIDE.md` e `docs/ARCHITECTURE.md`. Toda lógica matemática deve utilizar o motor CSPRNG nativo sem Math.random(). Toda operação financeira de saldo ou giro deve utilizar travas atômicas imediatas no banco. Respeite as travas de CPF Casado, Rollover Estrito e Idempotência de Webhook. Escreva códigos limpos, performáticos e com cobertura de testes automatizados."*
 
