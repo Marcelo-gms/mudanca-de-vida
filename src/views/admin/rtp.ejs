@@ -2,172 +2,133 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tigrinho Admin | Calibração de RTP e House Edge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0507">
+  <title>Tigrinho Admin | RTP e House Edge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Orbitron:wght@600;800&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body class="admin-body">
   <div class="admin-wrapper">
     <%- include('header') %>
 
     <main class="admin-content">
-      <div class="page-title-row">
+      <header class="page-head">
         <div>
-          <h2>Calibração Matemática: RTP, House Edge e Volatilidade</h2>
-          <p>Ajuste dinamicamente a margem de retenção da casa, a probabilidade do bônus e teste o impacto em tempo real.</p>
+          <p class="page-kicker">Matemática do jogo</p>
+          <h1>RTP, house edge e volatilidade</h1>
+          <p class="page-desc">Ajuste a margem da casa, a frequência do bônus e os pesos dos rolos. Teste o impacto com o simulador antes de aplicar.</p>
         </div>
-      </div>
+      </header>
 
       <div class="admin-grid-2">
-        <!-- Painel de Configurações -->
-        <div class="admin-panel-card">
+        <section class="admin-panel-card">
           <div class="panel-card-head">
-            <h3>⚙️ Parâmetros do Motor Matemático</h3>
+            <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Parâmetros do motor</h3>
           </div>
 
-          <form id="rtpSettingsForm" class="mt-3">
-            <!-- RTP Target Slider -->
+          <form id="rtpSettingsForm">
             <div class="form-group">
               <div class="flex-between">
-                <label>RTP Teórico Alvo (%):</label>
-                <strong id="rtpValDisplay" class="color-gold"><%= mathConfig.rtpTarget %>%</strong>
+                <label for="rtpTargetInput">RTP teórico alvo</label>
+                <strong id="rtpValDisplay" class="stat-chip color-gold"><%= mathConfig.rtpTarget %>%</strong>
               </div>
-              <input
-                type="range"
-                id="rtpTargetInput"
-                min="80"
-                max="105"
-                step="0.5"
-                value="<%= mathConfig.rtpTarget %>"
-                class="admin-slider"
-              />
-              <small class="field-hint">Percentual médio retornado aos jogadores ao longo do tempo.</small>
+              <input type="range" id="rtpTargetInput" min="80" max="105" step="0.5" value="<%= mathConfig.rtpTarget %>" class="admin-slider" />
+              <small class="field-hint">Percentual médio devolvido aos jogadores ao longo do tempo.</small>
             </div>
 
-            <!-- House Edge Readout -->
             <div class="form-group">
               <div class="flex-between">
-                <label>House Edge Estimado (Margem da Casa):</label>
-                <strong id="houseEdgeValDisplay" class="color-green"><%= mathConfig.houseEdge %>%</strong>
+                <span class="label-like">House edge estimado</span>
+                <strong id="houseEdgeValDisplay" class="stat-chip color-green"><%= mathConfig.houseEdge %>%</strong>
               </div>
-              <small class="field-hint">Cálculo direto: <code>100% - RTP</code></small>
+              <small class="field-hint">Cálculo direto: <code>100% − RTP</code></small>
             </div>
 
-            <!-- Tigre da Sorte Bonus Chance -->
             <div class="form-group">
               <div class="flex-between">
-                <label>Frequência do Bônus "Tigre da Sorte" (%):</label>
-                <strong id="bonusValDisplay" class="color-gold"><%= mathConfig.bonusChance %>%</strong>
+                <label for="bonusChanceInput">Frequência do bônus "Tigre da Sorte"</label>
+                <strong id="bonusValDisplay" class="stat-chip color-gold"><%= mathConfig.bonusChance %>%</strong>
               </div>
-              <input
-                type="range"
-                id="bonusChanceInput"
-                min="0"
-                max="10"
-                step="0.5"
-                value="<%= mathConfig.bonusChance %>"
-                class="admin-slider"
-              />
-              <small class="field-hint">Controla a taxa de ativação da rodada especial de 5x (3% = padrão 96% RTP).</small>
+              <input type="range" id="bonusChanceInput" min="0" max="10" step="0.5" value="<%= mathConfig.bonusChance %>" class="admin-slider" />
+              <small class="field-hint">Taxa de ativação da rodada especial de 5x (3% = padrão para 96% de RTP).</small>
             </div>
 
-            <!-- Rollover Factor -->
             <div class="form-group">
-              <label>Fator de Rollover Obrigatório para Saque (x):</label>
-              <input
-                type="number"
-                id="rolloverFactorInput"
-                min="0.5"
-                max="10"
-                step="0.5"
-                value="<%= rolloverFactor %>"
-                class="admin-input"
-              />
-              <small class="field-hint">Ex: 1.0x exige apostar 100% do valor depositado antes de liberar saques.</small>
+              <label for="rolloverFactorInput">Rollover obrigatório para saque (x)</label>
+              <input type="number" id="rolloverFactorInput" min="0.5" max="10" step="0.5" value="<%= rolloverFactor %>" class="admin-input" inputmode="decimal" />
+              <small class="field-hint">Ex.: 1.0x exige apostar 100% do valor depositado antes de liberar saques.</small>
             </div>
 
-            <!-- Symbol Weights -->
-            <div class="form-group mt-3">
-              <label>Tabela de Pesos dos Rolos (PAR Sheet):</label>
+            <div class="form-group">
+              <span class="label-like">Pesos dos rolos (PAR sheet)</span>
               <div class="weights-grid">
-                <div class="weight-item">
-                  <span>🐯 Tigre (Wild 50x):</span>
+                <label class="weight-item">
+                  <canvas data-sym="TIGRE" aria-hidden="true"></canvas>
+                  <span>Tigre <small>Wild · 50x</small></span>
                   <input type="number" id="weightTigre" value="<%= mathConfig.symbolWeights.TIGRE %>" min="1" max="50" class="admin-input">
-                </div>
-                <div class="weight-item">
-                  <span>💰 Moeda (10x):</span>
+                </label>
+                <label class="weight-item">
+                  <canvas data-sym="MOEDA" aria-hidden="true"></canvas>
+                  <span>Moedas <small>10x</small></span>
                   <input type="number" id="weightMoeda" value="<%= mathConfig.symbolWeights.MOEDA %>" min="1" max="50" class="admin-input">
-                </div>
-                <div class="weight-item">
-                  <span>🧧 Barra (5x):</span>
+                </label>
+                <label class="weight-item">
+                  <canvas data-sym="BARRA" aria-hidden="true"></canvas>
+                  <span>Barras <small>5x</small></span>
                   <input type="number" id="weightBarra" value="<%= mathConfig.symbolWeights.BARRA %>" min="1" max="80" class="admin-input">
-                </div>
-                <div class="weight-item">
-                  <span>🍊 Laranja (2x):</span>
+                </label>
+                <label class="weight-item">
+                  <canvas data-sym="LARANJA" aria-hidden="true"></canvas>
+                  <span>Laranja <small>2x</small></span>
                   <input type="number" id="weightLaranja" value="<%= mathConfig.symbolWeights.LARANJA %>" min="10" max="150" class="admin-input">
-                </div>
+                </label>
               </div>
             </div>
 
-            <div class="action-btn-row mt-4">
-              <button type="button" class="btn-secondary" id="btnTestSimulation">
-                🧪 Testar Simulação (10.000 Giros)
-              </button>
-              <button type="submit" class="btn-primary" id="btnSaveRtp">
-                💾 Salvar e Aplicar
-              </button>
+            <div class="action-btn-row">
+              <button type="button" class="btn-secondary" id="btnTestSimulation">Simular 10.000 giros</button>
+              <button type="submit" class="btn-primary" id="btnSaveRtp">Salvar e aplicar</button>
             </div>
           </form>
-        </div>
+        </section>
 
-        <!-- Painel de Resultados do Simulador -->
-        <div class="admin-panel-card">
+        <section class="admin-panel-card">
           <div class="panel-card-head">
-            <h3>📊 Simulador Monte Carlo em Tempo Real</h3>
+            <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>Simulador Monte Carlo</h3>
           </div>
-          <p class="modal-desc">Execute testes instantâneos para auditar a matemática antes de aplicar aos jogadores reais.</p>
+          <p class="page-desc small">Rode 10.000 giros com os parâmetros do formulário para auditar a matemática antes de aplicar aos jogadores.</p>
 
           <div id="simEmptyNotice" class="sim-empty-box">
-            Clique em <strong>"Testar Simulação"</strong> para rodar 10.000 rodadas com os parâmetros selecionados.
+            Clique em <strong>Simular 10.000 giros</strong> para ver RTP, house edge e distribuição de prêmios.
           </div>
 
           <div id="simResultsBox" style="display: none;">
             <div class="kpi-grid-mini">
-              <div class="kpi-card-mini">
-                <span class="mini-title">RTP Medido</span>
-                <span class="mini-val" id="simRtpVal">0%</span>
-              </div>
-              <div class="kpi-card-mini">
-                <span class="mini-title">House Edge Medido</span>
-                <span class="mini-val" id="simHouseEdgeVal">0%</span>
-              </div>
-              <div class="kpi-card-mini">
-                <span class="mini-title">Hit Frequency</span>
-                <span class="mini-val" id="simHitFreqVal">0%</span>
-              </div>
-              <div class="kpi-card-mini">
-                <span class="mini-title">Tempo de Teste</span>
-                <span class="mini-val" id="simTimeVal">0ms</span>
-              </div>
+              <div class="kpi-card-mini"><span class="mini-title">RTP medido</span><span class="mini-val" id="simRtpVal">0%</span></div>
+              <div class="kpi-card-mini"><span class="mini-title">House edge</span><span class="mini-val" id="simHouseEdgeVal">0%</span></div>
+              <div class="kpi-card-mini"><span class="mini-title">Hit frequency</span><span class="mini-val" id="simHitFreqVal">0%</span></div>
+              <div class="kpi-card-mini"><span class="mini-title">Tempo</span><span class="mini-val" id="simTimeVal">0ms</span></div>
             </div>
 
-            <div class="mt-3">
-              <h4>Distribuição de Linhas Premiadas:</h4>
-              <ul class="sim-hits-list">
-                <li><span>🐯 Tigres (50x):</span> <strong id="simHitTigre">0</strong></li>
-                <li><span>💰 Moedas (10x):</span> <strong id="simHitMoeda">0</strong></li>
-                <li><span>🧧 Barras (5x):</span> <strong id="simHitBarra">0</strong></li>
-                <li><span>🍊 Laranjas (2x):</span> <strong id="simHitLaranja">0</strong></li>
-              </ul>
-            </div>
+            <h4 class="mt-4">Linhas premiadas por símbolo</h4>
+            <ul class="sim-hits-list">
+              <li><canvas data-sym="TIGRE" aria-hidden="true"></canvas><span>Tigres (50x)</span><strong id="simHitTigre">0</strong></li>
+              <li><canvas data-sym="MOEDA" aria-hidden="true"></canvas><span>Moedas (10x)</span><strong id="simHitMoeda">0</strong></li>
+              <li><canvas data-sym="BARRA" aria-hidden="true"></canvas><span>Barras (5x)</span><strong id="simHitBarra">0</strong></li>
+              <li><canvas data-sym="LARANJA" aria-hidden="true"></canvas><span>Laranjas (2x)</span><strong id="simHitLaranja">0</strong></li>
+            </ul>
           </div>
-        </div>
+        </section>
       </div>
     </main>
   </div>
 
+  <script src="/js/game/symbols.js"></script>
+  <script src="/js/admin.js"></script>
   <script>
     const rtpInput = document.getElementById('rtpTargetInput');
     const rtpDisplay = document.getElementById('rtpValDisplay');
@@ -199,72 +160,57 @@
       };
     }
 
-    // Teste de Simulação
-    document.getElementById('btnTestSimulation').addEventListener('click', async () => {
-      const btn = document.getElementById('btnTestSimulation');
-      btn.disabled = true;
-      btn.textContent = 'Simulando...';
-
+    const simBtn = document.getElementById('btnTestSimulation');
+    simBtn.addEventListener('click', async () => {
+      simBtn.disabled = true;
+      simBtn.textContent = 'Simulando...';
       const payload = getFormPayload();
 
       try {
         const res = await fetch('/admin/api/rtp/simulate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            spins: 10000,
-            bonusChance: payload.bonusChance,
-            symbolWeights: payload.symbolWeights
-          })
+          body: JSON.stringify({ spins: 10000, bonusChance: payload.bonusChance, symbolWeights: payload.symbolWeights })
         });
-
         const data = await res.json();
-        if (data.success && data.simulation) {
-          const sim = data.simulation;
-          document.getElementById('simEmptyNotice').style.display = 'none';
-          document.getElementById('simResultsBox').style.display = 'block';
+        if (!data.success || !data.simulation) throw new Error(data.error || 'Falha na simulação.');
 
-          document.getElementById('simRtpVal').textContent = sim.rtp + '%';
-          document.getElementById('simHouseEdgeVal').textContent = sim.houseEdge + '%';
-          document.getElementById('simHitFreqVal').textContent = sim.hitFrequency + '%';
-          document.getElementById('simTimeVal').textContent = sim.elapsedMs + 'ms';
-
-          document.getElementById('simHitTigre').textContent = sim.hitsBySymbol.TIGRE.toLocaleString();
-          document.getElementById('simHitMoeda').textContent = sim.hitsBySymbol.MOEDA.toLocaleString();
-          document.getElementById('simHitBarra').textContent = sim.hitsBySymbol.BARRA.toLocaleString();
-          document.getElementById('simHitLaranja').textContent = sim.hitsBySymbol.LARANJA.toLocaleString();
-        }
+        const sim = data.simulation;
+        document.getElementById('simEmptyNotice').style.display = 'none';
+        document.getElementById('simResultsBox').style.display = 'block';
+        document.getElementById('simRtpVal').textContent = sim.rtp + '%';
+        document.getElementById('simHouseEdgeVal').textContent = sim.houseEdge + '%';
+        document.getElementById('simHitFreqVal').textContent = sim.hitFrequency + '%';
+        document.getElementById('simTimeVal').textContent = sim.elapsedMs + 'ms';
+        document.getElementById('simHitTigre').textContent = sim.hitsBySymbol.TIGRE.toLocaleString('pt-BR');
+        document.getElementById('simHitMoeda').textContent = sim.hitsBySymbol.MOEDA.toLocaleString('pt-BR');
+        document.getElementById('simHitBarra').textContent = sim.hitsBySymbol.BARRA.toLocaleString('pt-BR');
+        document.getElementById('simHitLaranja').textContent = sim.hitsBySymbol.LARANJA.toLocaleString('pt-BR');
+        // canvases que estavam ocultos ganham tamanho agora
+        document.querySelectorAll('#simResultsBox canvas[data-sym]').forEach((c) => SymbolRenderer.drawTo(c, c.dataset.sym));
       } catch (err) {
-        alert('Erro ao simular: ' + err.message);
+        adminToast('Erro ao simular: ' + err.message, 'error');
       } finally {
-        btn.disabled = false;
-        btn.textContent = '🧪 Testar Simulação (10.000 Giros)';
+        simBtn.disabled = false;
+        simBtn.textContent = 'Simular 10.000 giros';
       }
     });
 
-    // Salvar Configurações
     document.getElementById('rtpSettingsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const payload = getFormPayload();
-
       try {
         const res = await fetch('/admin/api/rtp/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(getFormPayload())
         });
-
         const data = await res.json();
-        if (data.success) {
-          alert('✅ Configurações matemáticas atualizadas com sucesso!');
-        } else {
-          alert(data.error);
-        }
+        if (data.success) adminToast('Configurações matemáticas atualizadas!', 'success');
+        else adminToast(data.error || 'Erro ao salvar.', 'error');
       } catch (err) {
-        alert('Erro ao salvar: ' + err.message);
+        adminToast('Erro ao salvar: ' + err.message, 'error');
       }
     });
   </script>
 </body>
 </html>
-

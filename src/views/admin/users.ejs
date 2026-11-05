@@ -2,53 +2,52 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tigrinho Admin | Gestão de Usuários e Rollover</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0507">
+  <title>Tigrinho Admin | Usuários</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Orbitron:wght@600;800&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body class="admin-body">
   <div class="admin-wrapper">
     <%- include('header') %>
 
     <main class="admin-content">
-      <div class="page-title-row">
+      <header class="page-head">
         <div>
-          <h2>Gestão de Usuários e Carteiras</h2>
-          <p>Consulte saldos, audite o cumprimento de rollover e realize ajustes manuais de créditos.</p>
+          <p class="page-kicker">Usuários</p>
+          <h1>Jogadores e carteiras</h1>
+          <p class="page-desc">Consulte saldos, acompanhe o rollover e faça ajustes manuais de crédito.</p>
         </div>
-      </div>
+      </header>
 
-      <!-- Search & Filters -->
-      <div class="admin-panel-card mb-3">
-        <form method="GET" action="/admin/users" class="search-form">
-          <input
-            type="text"
-            name="q"
-            placeholder="Buscar por Nome, E-mail ou CPF..."
-            value="<%= search %>"
-            class="admin-input search-input"
-          />
+      <section class="admin-panel-card mb-3">
+        <form method="GET" action="/admin/users" class="search-form" role="search">
+          <label class="search-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" name="q" placeholder="Buscar por nome, e-mail ou CPF" value="<%= search %>" class="admin-input search-input" aria-label="Buscar usuários" />
+          </label>
           <button type="submit" class="btn-primary">Filtrar</button>
           <% if (search) { %>
-            <a href="/admin/users" class="btn-secondary" style="line-height:36px; text-decoration:none; padding: 0 12px;">Limpar</a>
+            <a href="/admin/users" class="btn-ghost">Limpar</a>
           <% } %>
         </form>
-      </div>
+      </section>
 
-      <!-- Users Table -->
-      <div class="admin-panel-card">
+      <section class="admin-panel-card">
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
               <tr>
                 <th>Usuário</th>
                 <th>CPF</th>
-                <th>Saldo Atual</th>
+                <th>Saldo</th>
                 <th>Depositado</th>
                 <th>Apostado</th>
-                <th>Status do Rollover</th>
+                <th>Rollover</th>
                 <th>Papel</th>
                 <th>Status</th>
                 <th>Ações</th>
@@ -58,194 +57,146 @@
               <% if (data.users.length > 0) { %>
                 <% data.users.forEach(u => { %>
                   <tr>
-                    <td>
-                      <strong><%= u.name %></strong><br>
-                      <small class="text-muted"><%= u.email %></small>
-                    </td>
-                    <td><code><%= u.document %></code></td>
-                    <td>
-                      <strong class="color-gold">R$ <%= u.balanceFormatted %></strong>
-                    </td>
-                    <td>R$ <%= u.depositedFormatted %></td>
-                    <td>R$ <%= u.wageredFormatted %></td>
-                    <td>
+                    <td data-label="Usuário"><span class="user-cell"><strong><%= u.name %></strong><small class="text-muted"><%= u.email %></small></span></td>
+                    <td data-label="CPF"><code><%= u.document %></code></td>
+                    <td data-label="Saldo"><strong class="color-gold">R$ <%= u.balanceFormatted %></strong></td>
+                    <td data-label="Depositado">R$ <%= u.depositedFormatted %></td>
+                    <td data-label="Apostado">R$ <%= u.wageredFormatted %></td>
+                    <td data-label="Rollover">
                       <% if (u.rolloverMet) { %>
-                        <span class="badge-success">✅ Cumprido (100%)</span>
+                        <span class="badge-success">Cumprido</span>
                       <% } else { %>
-                        <span class="badge-warning">⚠️ <%= u.rolloverProgress %>%</span><br>
-                        <small class="text-muted">Meta: R$ <%= u.rolloverRequiredFormatted %></small>
+                        <span class="rollover-cell">
+                          <span class="badge-warning"><%= u.rolloverProgress %>%</span>
+                          <small class="text-muted">Meta R$ <%= u.rolloverRequiredFormatted %></small>
+                        </span>
                       <% } %>
                     </td>
-                    <td>
-                      <% if (u.role === 'admin') { %>
-                        <span class="badge-admin">ADMIN</span>
-                      <% } else { %>
-                        <span class="badge-user">JOGADOR</span>
-                      <% } %>
+                    <td data-label="Papel">
+                      <span class="<%= u.role === 'admin' ? 'badge-admin' : 'badge-user' %>"><%= u.role === 'admin' ? 'Admin' : 'Jogador' %></span>
                     </td>
-                    <td>
-                      <% if (u.status === 'active') { %>
-                        <span class="badge-success">ATIVO</span>
-                      <% } else { %>
-                        <span class="badge-danger">BLOQUEADO</span>
-                      <% } %>
+                    <td data-label="Status">
+                      <span class="<%= u.status === 'active' ? 'badge-success' : 'badge-danger' %>"><%= u.status === 'active' ? 'Ativo' : 'Bloqueado' %></span>
                     </td>
-                    <td>
-                      <div class="action-btn-group">
-                        <button class="btn-action" title="Ajustar Saldo" onclick="openAdjustModal('<%= u.id %>', '<%= u.name %>', '<%= u.balanceFormatted %>')">
-                          💵 Saldo
-                        </button>
-                        <button class="btn-action" title="Liberar Rollover" onclick="resetRollover('<%= u.id %>', '<%= u.name %>')">
-                          🔓 Rollover
-                        </button>
-                        <button class="btn-action" title="Alternar Status" onclick="toggleStatus('<%= u.id %>')">
-                          <%= u.status === 'active' ? '🚫 Bloquear' : '✅ Ativar' %>
-                        </button>
-                        <button class="btn-action" title="Alternar Papel" onclick="toggleRole('<%= u.id %>')">
-                          <%= u.role === 'admin' ? '👤 Usuário' : '👑 Admin' %>
-                        </button>
+                    <td data-label="Ações" class="cell-actions">
+                      <div class="action-btn-group" data-id="<%= u.id %>" data-name="<%= u.name %>" data-balance="<%= u.balanceFormatted %>">
+                        <button type="button" class="btn-action" data-action="adjust">Saldo</button>
+                        <button type="button" class="btn-action" data-action="rollover">Liberar rollover</button>
+                        <button type="button" class="btn-action <%= u.status === 'active' ? 'danger' : '' %>" data-action="status"><%= u.status === 'active' ? 'Bloquear' : 'Ativar' %></button>
+                        <button type="button" class="btn-action" data-action="role"><%= u.role === 'admin' ? 'Tornar jogador' : 'Tornar admin' %></button>
                       </div>
                     </td>
                   </tr>
                 <% }) %>
               <% } else { %>
-                <tr>
-                  <td colspan="9" style="text-align:center;">Nenhum usuário localizado.</td>
-                </tr>
+                <tr><td colspan="9" class="empty-cell">Nenhum usuário encontrado.</td></tr>
               <% } %>
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </main>
   </div>
 
   <!-- Modal Ajuste de Saldo -->
   <div class="modal-overlay" id="adjustBalanceModal">
-    <div class="modal-card">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="adjustTitle">
       <div class="modal-header">
-        <h3>💵 Ajuste Manual de Saldo</h3>
-        <button class="modal-close" onclick="closeAdjustModal()">✕</button>
+        <h3 id="adjustTitle">Ajuste manual de saldo</h3>
+        <button class="modal-close" type="button" data-close-modal aria-label="Fechar">✕</button>
       </div>
       <div class="modal-body">
-        <p>Ajuste os créditos de <strong id="adjustUserName"></strong> (Saldo Atual: R$ <span id="adjustUserBal"></span>):</p>
-        
-        <div class="form-group mt-2">
-          <label>Valor do Ajuste (R$):</label>
-          <input type="number" id="adjustAmountInput" step="0.50" placeholder="Ex: 50.00 para somar ou -20.00 para subtrair" class="admin-input">
-          <small class="field-hint">Use números positivos para creditar e negativos para debitar.</small>
+        <p class="modal-desc">Créditos de <strong id="adjustUserName"></strong> · saldo atual R$ <span id="adjustUserBal"></span></p>
+
+        <div class="form-group">
+          <label for="adjustAmountInput">Valor do ajuste (R$)</label>
+          <input type="number" id="adjustAmountInput" step="0.50" placeholder="Ex.: 50 para somar, -20 para subtrair" class="admin-input" inputmode="decimal">
+          <small class="field-hint">Positivo credita, negativo debita.</small>
         </div>
 
-        <div class="form-group mt-2">
-          <label>Motivo do Ajuste:</label>
+        <div class="form-group">
+          <label for="adjustReasonInput">Motivo</label>
           <input type="text" id="adjustReasonInput" value="Ajuste manual pela administração" class="admin-input">
         </div>
 
-        <button class="btn-primary btn-block mt-3" id="confirmAdjustBtn" onclick="submitAdjustBalance()">CONFIRMAR AJUSTE</button>
+        <button class="btn-primary btn-block" type="button" id="confirmAdjustBtn">Confirmar ajuste</button>
       </div>
     </div>
   </div>
 
+  <script src="/js/admin.js"></script>
   <script>
+    const modal = document.getElementById('adjustBalanceModal');
     let currentAdjustUserId = null;
 
-    function openAdjustModal(id, name, balance) {
-      currentAdjustUserId = id;
-      document.getElementById('adjustUserName').textContent = name;
-      document.getElementById('adjustUserBal').textContent = balance;
-      document.getElementById('adjustAmountInput').value = '';
-      document.getElementById('adjustBalanceModal').classList.add('active');
+    async function post(url, body) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      return res.json();
     }
 
-    function closeAdjustModal() {
-      document.getElementById('adjustBalanceModal').classList.remove('active');
-      currentAdjustUserId = null;
-    }
+    // Ações lidas de data-* (nada de JS inline com dados do usuário)
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const { id, name, balance } = btn.closest('.action-btn-group').dataset;
 
-    async function submitAdjustBalance() {
+      try {
+        if (btn.dataset.action === 'adjust') {
+          currentAdjustUserId = id;
+          document.getElementById('adjustUserName').textContent = name;
+          document.getElementById('adjustUserBal').textContent = balance;
+          document.getElementById('adjustAmountInput').value = '';
+          modal.classList.add('active');
+          document.getElementById('adjustAmountInput').focus();
+          return;
+        }
+
+        if (btn.dataset.action === 'rollover') {
+          if (!confirm(`Liberar 100% do rollover de ${name}?`)) return;
+          const data = await post('/admin/api/users/reset-rollover', { userId: id });
+          if (!data.success) return adminToast(data.error || 'Erro ao liberar rollover.', 'error');
+          adminToast('Rollover liberado!', 'success');
+          return reloadSoon();
+        }
+
+        if (btn.dataset.action === 'status') {
+          const data = await post('/admin/api/users/toggle-status', { userId: id });
+          if (!data.success) return adminToast(data.error || 'Erro ao alterar status.', 'error');
+          return location.reload();
+        }
+
+        if (btn.dataset.action === 'role') {
+          if (!confirm(`Alternar a permissão de ${name} entre Jogador e Admin?`)) return;
+          const data = await post('/admin/api/users/toggle-role', { userId: id });
+          if (!data.success) return adminToast(data.error || 'Erro ao alterar papel.', 'error');
+          return location.reload();
+        }
+      } catch (err) {
+        adminToast('Erro: ' + err.message, 'error');
+      }
+    });
+
+    document.querySelector('[data-close-modal]').addEventListener('click', () => modal.classList.remove('active'));
+
+    document.getElementById('confirmAdjustBtn').addEventListener('click', async () => {
       const amount = parseFloat(document.getElementById('adjustAmountInput').value);
       const reason = document.getElementById('adjustReasonInput').value;
-
-      if (isNaN(amount) || amount === 0) {
-        alert('Informe um valor válido.');
-        return;
-      }
+      if (isNaN(amount) || amount === 0) return adminToast('Informe um valor válido.', 'error');
 
       try {
-        const res = await fetch('/admin/api/users/adjust-balance', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentAdjustUserId, deltaAmount: amount, reason })
-        });
-        const data = await res.json();
-        if (data.success) {
-          alert('Saldo ajustado com sucesso! Novo saldo: R$ ' + data.newBalanceFormatted);
-          location.reload();
-        } else {
-          alert(data.error || 'Erro ao ajustar saldo');
-        }
+        const data = await post('/admin/api/users/adjust-balance', { userId: currentAdjustUserId, deltaAmount: amount, reason });
+        if (!data.success) return adminToast(data.error || 'Erro ao ajustar saldo.', 'error');
+        modal.classList.remove('active');
+        adminToast('Saldo ajustado! Novo saldo: R$ ' + data.newBalanceFormatted, 'success');
+        reloadSoon();
       } catch (err) {
-        alert('Erro: ' + err.message);
+        adminToast('Erro: ' + err.message, 'error');
       }
-    }
-
-    async function resetRollover(userId, name) {
-      if (!confirm(`Deseja cumprir e liberar 100% o rollover de ${name}?`)) return;
-      try {
-        const res = await fetch('/admin/api/users/reset-rollover', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId })
-        });
-        const data = await res.json();
-        if (data.success) {
-          alert('Rollover liberado com sucesso!');
-          location.reload();
-        } else {
-          alert(data.error);
-        }
-      } catch (err) {
-        alert('Erro: ' + err.message);
-      }
-    }
-
-    async function toggleStatus(userId) {
-      try {
-        const res = await fetch('/admin/api/users/toggle-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId })
-        });
-        const data = await res.json();
-        if (data.success) {
-          location.reload();
-        } else {
-          alert(data.error);
-        }
-      } catch (err) {
-        alert('Erro: ' + err.message);
-      }
-    }
-
-    async function toggleRole(userId) {
-      if (!confirm('Deseja alternar a permissão deste usuário entre Jogador e Admin?')) return;
-      try {
-        const res = await fetch('/admin/api/users/toggle-role', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId })
-        });
-        const data = await res.json();
-        if (data.success) {
-          location.reload();
-        } else {
-          alert(data.error);
-        }
-      } catch (err) {
-        alert('Erro: ' + err.message);
-      }
-    }
+    });
   </script>
 </body>
 </html>
-
