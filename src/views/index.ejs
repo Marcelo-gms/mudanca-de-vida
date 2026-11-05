@@ -52,11 +52,12 @@
           <li><canvas data-sym="BARRA" aria-label="Barras de ouro"></canvas><b>5x</b></li>
           <li><canvas data-sym="LARANJA" aria-label="Laranja"></canvas><b>2x</b></li>
         </ul>
-        <p class="paytable-note">3 iguais na linha central · Tigre é coringa</p>
+        <p class="paytable-note">Paga com <b>3 iguais na faixa dourada</b> · Tigre é coringa</p>
 
-        <!-- Janela dos rolos -->
+        <!-- Janela dos rolos (ocupa o espaço que sobrar na tela) -->
+        <div class="reel-stage">
         <div class="reel-bay">
-          <span class="line-marker" aria-hidden="true">1</span>
+          <span class="line-marker" aria-hidden="true"></span>
           <div class="reel-window">
             <canvas id="slotCanvas" role="img" aria-label="Rolos do caça-níquel"></canvas>
             <div class="glass" aria-hidden="true"></div>
@@ -66,7 +67,8 @@
             </div>
             <div class="tiger-bonus-alert" id="tigerBonusAlert">Bônus Tigre da Sorte · +5x</div>
           </div>
-          <span class="line-marker" aria-hidden="true">1</span>
+          <span class="line-marker" aria-hidden="true"></span>
+        </div>
         </div>
 
         <!-- Displays LED -->

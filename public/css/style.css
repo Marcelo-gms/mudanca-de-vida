@@ -68,12 +68,11 @@ button {
 .auth-body {
   min-height: 100vh;
   min-height: 100dvh;
-  display: flex;
-  justify-content: center;
   background:
     radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 70, 50, 0.22), transparent 70%),
     radial-gradient(ellipse at 50% 120%, #3a0710 0%, transparent 60%),
     linear-gradient(180deg, #24050b 0%, #0a0203 100%);
+  background-attachment: fixed;
 }
 
 .game-body::before,
@@ -81,6 +80,7 @@ button {
   content: '';
   position: fixed;
   inset: -10%;
+  z-index: -1;
   pointer-events: none;
   background:
     radial-gradient(circle at 12% 20%, rgba(255, 196, 64, 0.22) 0 3%, transparent 9%),
@@ -96,33 +96,49 @@ button {
   to { transform: translate3d(3%, -2%, 0) scale(1.06); }
 }
 
+/* =========================================================
+   Unidade responsiva --u
+   Todo o gabinete é medido em --u. Ela é limitada pela largura
+   E pela altura da tela, então a máquina inteira sempre cabe
+   (rolos ocupam o espaço que sobrar).
+   ========================================================= */
+.game-body {
+  --u: min(1vw, 0.575vh, 5.6px);
+  --u: min(1vw, 0.575dvh, 5.6px);
+  display: flex;
+  justify-content: center;
+}
+
 .game-container {
   position: relative;
-  width: 100%;
-  max-width: 480px;
-  padding: 0 12px 28px;
+  width: calc(var(--u) * 100);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 420px;
   display: flex;
   flex-direction: column;
+  padding: 0 calc(var(--u) * 2.5) max(calc(var(--u) * 2.5), env(safe-area-inset-bottom));
 }
 
 /* ---------- Barra superior ---------- */
 .topbar {
+  flex: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  padding: max(10px, env(safe-area-inset-top)) 0 12px;
+  gap: calc(var(--u) * 1.5);
+  padding: max(calc(var(--u) * 2), env(safe-area-inset-top)) 0 calc(var(--u) * 2);
 }
 
 .topbar-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: calc(var(--u) * 1.5);
 }
 
 .btn-icon {
-  width: 36px;
-  height: 36px;
+  width: clamp(30px, calc(var(--u) * 9), 40px);
+  height: clamp(30px, calc(var(--u) * 9), 40px);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -136,8 +152,8 @@ button {
 
 .btn-icon svg,
 .deck-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 48%;
+  height: 48%;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -147,14 +163,15 @@ button {
 
 .btn-deposit,
 .btn-withdraw {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 18px;
+  height: clamp(30px, calc(var(--u) * 9), 40px);
+  padding: 0 clamp(10px, calc(var(--u) * 3.6), 18px);
+  border-radius: 999px;
   border: none;
-  font-size: 12px;
+  font-size: clamp(10px, calc(var(--u) * 2.9), 13px);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: #fff;
   cursor: pointer;
   transition: transform 0.15s, filter 0.15s;
@@ -186,17 +203,24 @@ button {
 /* ---------- Máquina ---------- */
 .machine {
   position: relative;
-  padding-right: 30px; /* espaço da alavanca */
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding-right: calc(var(--u) * 7); /* espaço da alavanca */
 }
 
 .cabinet {
   position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 10px 14px;
-  border: 5px solid transparent;
-  border-radius: 30px 30px 20px 20px;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2.4);
+  border: calc(var(--u) * 1.1) solid transparent;
+  border-radius: calc(var(--u) * 7) calc(var(--u) * 7) calc(var(--u) * 5) calc(var(--u) * 5);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0, transparent 7%, transparent 93%, rgba(0, 0, 0, 0.28) 100%) padding-box,
     linear-gradient(180deg, var(--lacquer-hi) 0%, var(--lacquer) 30%, var(--lacquer-dark) 75%, var(--lacquer-deep) 100%) padding-box,
@@ -207,6 +231,10 @@ button {
     inset 0 2px 0 rgba(255, 255, 255, 0.25),
     inset 0 -8px 20px rgba(0, 0, 0, 0.45);
   transition: box-shadow 0.4s;
+}
+
+.cabinet > * {
+  flex: none;
 }
 
 .is-win .cabinet {
@@ -233,8 +261,8 @@ button {
 .topper,
 .auth-header {
   position: relative;
-  padding: 8px 12px;
-  border-radius: 22px 22px 12px 12px;
+  padding: calc(var(--u) * 1.2) calc(var(--u) * 3);
+  border-radius: calc(var(--u) * 5.5) calc(var(--u) * 5.5) calc(var(--u) * 3) calc(var(--u) * 3);
   text-align: center;
   background: radial-gradient(ellipse at 50% 0%, #4a0812, #12020a 72%);
   box-shadow:
@@ -247,10 +275,10 @@ button {
 /* Lâmpadas em perseguição: duas camadas (acesas/apagadas) que trocam de lugar */
 .bulbs {
   display: block;
-  height: 14px;
+  height: calc(var(--u) * 2.8);
   background:
-    radial-gradient(circle, #fffbe8 0 2px, #ffcf3f 3px, rgba(255, 190, 40, 0.45) 5px, transparent 7px) 0 50% / 22px 100% repeat-x,
-    radial-gradient(circle, #7a4410 0 2.5px, #3a1c05 3.5px, transparent 4.5px) 11px 50% / 22px 100% repeat-x;
+    radial-gradient(circle, #fffbe8 0 calc(var(--u) * 0.5), #ffcf3f calc(var(--u) * 0.75), rgba(255, 190, 40, 0.45) calc(var(--u) * 1.2), transparent calc(var(--u) * 1.7)) 0 50% / calc(var(--u) * 5.4) 100% repeat-x,
+    radial-gradient(circle, #7a4410 0 calc(var(--u) * 0.6), #3a1c05 calc(var(--u) * 0.85), transparent calc(var(--u) * 1.1)) calc(var(--u) * 2.7) 50% / calc(var(--u) * 5.4) 100% repeat-x;
   animation: chase 0.9s steps(1) infinite;
 }
 
@@ -259,7 +287,7 @@ button {
 }
 
 @keyframes chase {
-  50% { background-position: 11px 50%, 22px 50%; }
+  50% { background-position: calc(var(--u) * 2.7) 50%, calc(var(--u) * 5.4) 50%; }
 }
 
 .is-spinning .bulbs { animation-duration: 0.3s; }
@@ -269,14 +297,14 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 4px 0 2px;
+  margin: calc(var(--u) * 0.8) 0 calc(var(--u) * 0.5);
   line-height: 1;
   font-weight: 400;
 }
 
 .mt-main {
   font-family: var(--font-display);
-  font-size: clamp(32px, 10vw, 44px);
+  font-size: calc(var(--u) * 9);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   background: linear-gradient(180deg, #fffbe0 0%, #ffd34d 42%, #e08a00 60%, #fff0a8 100%);
@@ -287,9 +315,9 @@ button {
 }
 
 .mt-sub {
-  margin-top: 2px;
+  margin-top: calc(var(--u) * 0.5);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: calc(var(--u) * 2.9);
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: #ffe0b0;
@@ -309,9 +337,9 @@ button {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 6px;
-  border-radius: 12px;
+  gap: calc(var(--u) * 1.2);
+  padding: calc(var(--u) * 1.2);
+  border-radius: calc(var(--u) * 3);
   background: linear-gradient(180deg, #1c0307, #2e060c);
   box-shadow: inset 0 0 0 1px rgba(246, 198, 74, 0.35), inset 0 6px 12px rgba(0, 0, 0, 0.6);
 }
@@ -320,56 +348,69 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 3px 2px;
-  border-radius: 8px;
+  gap: calc(var(--u) * 0.8);
+  padding: calc(var(--u) * 0.6) calc(var(--u) * 0.4);
+  border-radius: calc(var(--u) * 2);
   background: rgba(255, 255, 255, 0.04);
 }
 
 .paytable canvas {
-  width: 30px;
-  height: 30px;
+  width: calc(var(--u) * 7);
+  height: calc(var(--u) * 7);
 }
 
 .paytable b {
   font-family: var(--font-led);
-  font-size: 13px;
+  font-size: calc(var(--u) * 3.2);
   font-weight: 800;
   color: var(--gold-2);
   text-shadow: 0 0 6px rgba(246, 198, 74, 0.5);
 }
 
 .paytable-note {
-  margin-top: -4px;
+  margin-top: calc(var(--u) * -0.8);
   text-align: center;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: max(9px, calc(var(--u) * 2.6));
+  font-weight: 600;
   color: #ffd9b0;
-  opacity: 0.85;
+}
+
+.paytable-note b {
+  color: var(--gold-2);
+  font-weight: 800;
 }
 
 /* ---------- Janela dos rolos ---------- */
+.reel-stage {
+  --frame: calc(var(--u) * 1.8);
+  --marker: calc(var(--u) * 4.5);
+  flex: 1 1 0;
+  min-height: calc(var(--u) * 26);
+  max-height: calc(var(--u) * 54);
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+
+/* Largura = o que couber na largura OU na altura do palco (proporção fixa do canvas) */
 .reel-bay {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: calc(var(--u) * 1);
+  width: min(100cqw, calc((100cqh - var(--frame) * 2) * 1.38 + var(--frame) * 2 + var(--marker) * 2 + var(--u) * 2));
 }
 
 .line-marker {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: #3b1406;
+  flex: none;
+  width: var(--marker);
+  height: calc(var(--u) * 7);
   background: var(--gold-grad);
-  clip-path: polygon(0 0, 65% 0, 100% 50%, 65% 100%, 0 100%);
+  clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%);
+  filter: drop-shadow(0 0 6px rgba(255, 180, 40, 0.9));
 }
 
 .line-marker:last-child {
-  clip-path: polygon(35% 0, 100% 0, 100% 100%, 35% 100%, 0 50%);
+  clip-path: polygon(45% 0, 100% 0, 100% 100%, 45% 100%, 0 50%);
 }
 
 .is-win .line-marker {
@@ -384,8 +425,8 @@ button {
   position: relative;
   flex: 1;
   min-width: 0;
-  padding: 7px;
-  border-radius: 16px;
+  padding: var(--frame);
+  border-radius: calc(var(--u) * 4);
   background: var(--chrome-grad);
   box-shadow: 0 0 0 2px #1a0306, 0 6px 16px rgba(0, 0, 0, 0.6), inset 0 1px 0 #fff;
 }
@@ -395,26 +436,26 @@ button {
   width: 100%;
   height: auto;
   aspect-ratio: 1.38;
-  border-radius: 10px;
+  border-radius: calc(var(--u) * 2.5);
   background: #140404;
 }
 
 .glass {
   position: absolute;
-  inset: 7px;
-  border-radius: 10px;
+  inset: var(--frame);
+  border-radius: calc(var(--u) * 2.5);
   pointer-events: none;
-  background: linear-gradient(115deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 24%, transparent 25%, transparent 62%, rgba(255, 255, 255, 0.07) 63%, transparent 76%);
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 24%, transparent 25%, transparent 62%, rgba(255, 255, 255, 0.06) 63%, transparent 76%);
   box-shadow: inset 0 10px 18px rgba(0, 0, 0, 0.5), inset 0 -10px 18px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(0, 0, 0, 0.7);
 }
 
 .win-banner {
   position: absolute;
   left: 50%;
-  bottom: 14px;
+  bottom: calc(var(--u) * 2.5);
   z-index: 5;
-  padding: 5px 18px 7px;
-  border-radius: 14px;
+  padding: calc(var(--u) * 1) calc(var(--u) * 4) calc(var(--u) * 1.5);
+  border-radius: calc(var(--u) * 3);
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
@@ -434,7 +475,7 @@ button {
 .win-text {
   display: block;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: max(9px, calc(var(--u) * 2.6));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #ffe7b0;
@@ -443,7 +484,7 @@ button {
 .win-amount {
   display: block;
   font-family: var(--font-led);
-  font-size: 22px;
+  font-size: calc(var(--u) * 5.4);
   font-weight: 800;
   color: #fff6c8;
   text-shadow: 0 0 10px rgba(255, 200, 60, 0.9);
@@ -452,14 +493,14 @@ button {
 
 .tiger-bonus-alert {
   position: absolute;
-  top: 12px;
+  top: calc(var(--u) * 2.5);
   left: 50%;
   z-index: 6;
-  padding: 6px 14px;
+  padding: calc(var(--u) * 1.3) calc(var(--u) * 3.4);
   border-radius: 999px;
   white-space: nowrap;
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: max(9px, calc(var(--u) * 2.8));
   text-transform: uppercase;
   color: #3b1406;
   background: linear-gradient(90deg, #f6c64a, #fff3b8, #f6c64a) 0 0 / 200% 100%;
@@ -484,23 +525,23 @@ button {
 .led-panel {
   display: grid;
   grid-template-columns: 1.2fr 0.9fr 1.2fr;
-  gap: 6px;
+  gap: calc(var(--u) * 1.4);
 }
 
 .led {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: calc(var(--u) * 0.6);
   min-width: 0;
-  padding: 6px 4px 7px;
-  border-radius: 10px;
+  padding: calc(var(--u) * 1.3) calc(var(--u) * 1) calc(var(--u) * 1.5);
+  border-radius: calc(var(--u) * 2.5);
   background: linear-gradient(180deg, #050101, #140405);
   box-shadow: inset 0 0 0 1px #000, inset 0 3px 8px rgba(0, 0, 0, 0.9), 0 0 0 2px var(--gold-4), 0 0 0 3px rgba(246, 198, 74, 0.35);
 }
 
 .led-label {
-  font-size: 9px;
+  font-size: max(8px, calc(var(--u) * 2.1));
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -511,7 +552,7 @@ button {
   max-width: 100%;
   overflow: hidden;
   font-family: var(--font-led);
-  font-size: clamp(10px, 3.2vw, 15px);
+  font-size: max(10px, calc(var(--u) * 3.5));
   font-weight: 800;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -537,9 +578,9 @@ button {
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 10px 10px 14px;
-  border-radius: 14px;
+  gap: calc(var(--u) * 2.4);
+  padding: calc(var(--u) * 2.2) calc(var(--u) * 2.2) calc(var(--u) * 4.5);
+  border-radius: calc(var(--u) * 3.5);
   background: linear-gradient(180deg, #2a0409 0%, #12020a 100%);
   box-shadow: inset 0 0 0 1px rgba(246, 198, 74, 0.35), inset 0 8px 16px rgba(0, 0, 0, 0.6), 0 2px 0 rgba(255, 255, 255, 0.08);
 }
@@ -547,16 +588,16 @@ button {
 .bet-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: calc(var(--u) * 1.4);
 }
 
 .bet-step-btn {
-  flex: 0 0 34px;
-  height: 34px;
+  flex: 0 0 calc(var(--u) * 8.5);
+  height: calc(var(--u) * 8.5);
   border: none;
   border-radius: 50%;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: calc(var(--u) * 4.4);
   line-height: 1;
   color: #3b1406;
   background: radial-gradient(circle at 35% 30%, #fff6c8, var(--gold-2) 45%, #a86b0b);
@@ -575,17 +616,18 @@ button {
   flex: 1;
   display: flex;
   justify-content: space-between;
-  gap: 4px;
+  gap: calc(var(--u) * 1);
 }
 
 .preset-btn {
   --chip: #c81e2e;
   flex: 1 1 0;
-  max-width: 44px;
+  min-width: 0;
+  max-width: calc(var(--u) * 10.5);
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  font-size: 11px;
+  border: max(1.5px, calc(var(--u) * 0.45)) solid rgba(0, 0, 0, 0.35);
+  font-size: max(9px, calc(var(--u) * 2.7));
   font-weight: 900;
   color: #fff;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
@@ -604,7 +646,7 @@ button {
 .preset-btn:nth-child(5) { --chip: #1f1f1f; }
 
 .preset-btn.active {
-  transform: translateY(-4px) scale(1.08);
+  transform: translateY(calc(var(--u) * -1)) scale(1.08);
   box-shadow: 0 0 0 2px var(--gold-2), 0 0 14px rgba(255, 200, 60, 0.8), 0 6px 0 rgba(0, 0, 0, 0.4);
 }
 
@@ -612,7 +654,7 @@ button {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 10px;
+  gap: calc(var(--u) * 2.5);
 }
 
 .deck-btn {
@@ -620,20 +662,25 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  min-width: 64px;
-  padding: 8px 10px;
-  border-radius: 12px;
+  gap: calc(var(--u) * 0.7);
+  min-width: calc(var(--u) * 15);
+  padding: calc(var(--u) * 1.8) calc(var(--u) * 2.2);
+  border-radius: calc(var(--u) * 3);
   border: 1px solid rgba(246, 198, 74, 0.35);
   background: linear-gradient(180deg, #3a0a10, #1a0306);
   color: #e8c9a8;
-  font-size: 9.5px;
+  font-size: max(8px, calc(var(--u) * 2.3));
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
   box-shadow: 0 3px 0 #0a0102;
   transition: transform 0.08s, box-shadow 0.08s, background 0.2s, color 0.2s;
+}
+
+.deck-btn svg {
+  width: calc(var(--u) * 4.5);
+  height: calc(var(--u) * 4.5);
 }
 
 .deck-btn:active {
@@ -655,17 +702,17 @@ button {
 /* Botão GIRAR (domo de fliperama) */
 .spin-btn {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: calc(var(--u) * 21);
+  height: calc(var(--u) * 21);
   border: none;
   border-radius: 50%;
   cursor: pointer;
   background: radial-gradient(circle at 50% 35%, #8dffb4 0%, #22c55e 35%, #15803d 70%, #0b4d24 100%);
   box-shadow:
-    0 0 0 5px #1a0306,
-    0 0 0 8px var(--chrome-mid),
-    0 0 0 10px var(--chrome-lo),
-    0 7px 0 10px #0d0203;
+    0 0 0 calc(var(--u) * 1.2) #1a0306,
+    0 0 0 calc(var(--u) * 2) var(--chrome-mid),
+    0 0 0 calc(var(--u) * 2.5) var(--chrome-lo),
+    0 calc(var(--u) * 1.6) 0 calc(var(--u) * 2.5) #0d0203;
   transition: transform 0.08s, filter 0.2s;
 }
 
@@ -680,7 +727,7 @@ button {
 .spin-btn::after {
   content: '';
   position: absolute;
-  inset: -24px;
+  inset: calc(var(--u) * -5);
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(34, 197, 94, 0.55), transparent 65%);
@@ -694,7 +741,7 @@ button {
 .spin-text {
   position: relative;
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: calc(var(--u) * 4.4);
   text-transform: uppercase;
   color: #fff;
   text-shadow: 0 2px 0 #0b4d24, 0 0 10px rgba(255, 255, 255, 0.5);
@@ -716,9 +763,9 @@ button {
 
 /* Bandeja de moedas */
 .coin-tray {
-  height: 24px;
-  margin: 2px 18% 0;
-  border-radius: 0 0 16px 16px;
+  height: calc(var(--u) * 4.5);
+  margin: 0 18%;
+  border-radius: 0 0 calc(var(--u) * 4) calc(var(--u) * 4);
   background: linear-gradient(180deg, #050101, #1f0508);
   box-shadow: inset 0 6px 10px rgba(0, 0, 0, 0.9), 0 0 0 3px var(--chrome-mid), 0 0 0 4px #1a0306;
 }
@@ -727,9 +774,9 @@ button {
 .lever {
   position: absolute;
   right: 0;
-  top: 33%;
-  width: 30px;
-  height: 160px;
+  top: 30%;
+  width: calc(var(--u) * 7);
+  height: calc(var(--u) * 38);
   padding: 0;
   border: none;
   background: none;
@@ -740,9 +787,9 @@ button {
   position: absolute;
   left: 0;
   bottom: 0;
-  width: 24px;
-  height: 48px;
-  border-radius: 0 10px 10px 0;
+  width: calc(var(--u) * 6);
+  height: calc(var(--u) * 12);
+  border-radius: 0 calc(var(--u) * 2.5) calc(var(--u) * 2.5) 0;
   background: linear-gradient(90deg, var(--chrome-lo), var(--chrome-hi) 40%, var(--chrome-mid) 70%, var(--chrome-lo));
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
@@ -751,11 +798,11 @@ button {
    enquanto a bola desce acompanhando a ponta e cresce um pouco (vem na direção do jogador). */
 .lever-arm {
   position: absolute;
-  left: 8px;
-  bottom: 30px;
-  width: 9px;
-  height: 112px;
-  border-radius: 5px;
+  left: calc(var(--u) * 2);
+  bottom: calc(var(--u) * 7.5);
+  width: calc(var(--u) * 2.2);
+  height: calc(var(--u) * 27);
+  border-radius: calc(var(--u) * 1.2);
   transform-origin: 50% 100%;
   background: linear-gradient(90deg, #5d636b, var(--chrome-hi) 45%, #8d949d 70%, #3b4047);
   transition: transform 0.25s;
@@ -763,10 +810,10 @@ button {
 
 .lever-knob {
   position: absolute;
-  left: -2.5px;
-  top: 3px;
-  width: 30px;
-  height: 30px;
+  left: calc(var(--u) * -0.65);
+  top: calc(var(--u) * -0.25);
+  width: calc(var(--u) * 7.5);
+  height: calc(var(--u) * 7.5);
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #ff9a9a, #e01b2c 40%, #7a0611 82%);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.4);
@@ -775,7 +822,7 @@ button {
 
 @media (hover: hover) {
   .lever:hover .lever-arm { transform: scaleY(0.94); }
-  .lever:hover .lever-knob { transform: translateY(7px); }
+  .lever:hover .lever-knob { transform: translateY(calc(var(--u) * 1.6)); }
 }
 
 .lever.pull .lever-arm { animation: leverArm 0.75s cubic-bezier(0.3, 0.7, 0.4, 1); }
@@ -787,7 +834,7 @@ button {
 }
 
 @keyframes leverKnob {
-  35% { transform: translateY(196px) scale(1.15); }
+  35% { transform: translateY(calc(var(--u) * 47.25)) scale(1.15); }
   100% { transform: translateY(0) scale(1); }
 }
 
@@ -940,32 +987,104 @@ button {
 
 /* ---------- Telas de autenticação ---------- */
 .auth-body {
-  align-items: center;
-  padding: 20px;
+  --u: min(1vw, 4px);
+  display: flex;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
 }
 
 .auth-card {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  padding: 0 22px 24px;
+  max-width: 420px;
+  margin: auto; /* centraliza sem cortar o topo quando falta altura */
+  padding: 0 clamp(16px, 5vw, 26px) clamp(18px, 3vh, 26px);
   border: 5px solid transparent;
   border-radius: 28px 28px 20px 20px;
   background:
     linear-gradient(180deg, var(--lacquer) 0%, var(--lacquer-dark) 60%, var(--lacquer-deep) 100%) padding-box,
     var(--gold-ring) border-box;
   box-shadow: 0 0 0 2px #1a0306, 0 30px 60px -10px rgba(0, 0, 0, 0.85), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  animation: cardIn 0.6s var(--pop);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
 }
 
 .auth-header {
-  margin: 10px -12px 20px;
+  margin: 12px -10px clamp(14px, 2.6vh, 22px);
+  padding-bottom: 10px;
 }
 
-.auth-header p {
+/* Mini rolos em "modo atração" (fita desenhada pelo SymbolRenderer em auth.js) */
+.mini-reels {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  width: max-content;
+  margin: 10px auto 8px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--chrome-grad);
+  box-shadow: 0 0 0 2px #1a0306, 0 6px 14px rgba(0, 0, 0, 0.6);
+}
+
+.mini-reel {
+  position: relative;
+  width: clamp(44px, 13vw, 58px);
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f2b93c, #fff6d6 50%, #f2b93c);
+  background-repeat: no-repeat;
+  background-size: 100% 500%;
+  box-shadow: inset 0 8px 10px rgba(40, 10, 0, 0.4), inset 0 -8px 10px rgba(40, 10, 0, 0.4);
+  animation: miniReel 5s cubic-bezier(0.3, 1.35, 0.5, 1) infinite;
+}
+
+.mini-reel:nth-child(2) { animation-delay: 0.22s; }
+.mini-reel:nth-child(3) { animation-delay: 0.44s; }
+
+@keyframes miniReel {
+  0%, 15% { background-position: 50% 0%; }
+  25%, 40% { background-position: 50% 25%; }
+  50%, 65% { background-position: 50% 50%; }
+  75%, 90% { background-position: 50% 75%; }
+  100% { background-position: 50% 100%; }
+}
+
+.auth-lead {
   margin: 4px 0 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+}
+
+.password-field input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 92px;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  padding: 7px 10px;
+  border: 1px solid var(--border-gold);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--gold-1);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .auth-form .btn-primary {
@@ -979,7 +1098,7 @@ button {
   border: 1px dashed var(--gold-2);
   background: rgba(0, 0, 0, 0.3);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--gold-1);
 }
 
@@ -988,10 +1107,11 @@ button {
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
+  white-space: nowrap;
 }
 
 .auth-footer {
-  margin-top: 20px;
+  margin-top: 18px;
   text-align: center;
   font-size: 13px;
   color: var(--muted);
@@ -1001,6 +1121,13 @@ button {
   color: var(--gold-2);
   font-weight: 800;
   text-decoration: none;
+}
+
+@media (max-height: 700px) {
+  .auth-card .form-group { margin-bottom: 12px; }
+  .auth-card .form-group input { padding-block: 10px; }
+  .mini-reels { margin-block: 6px 4px; }
+  .mini-reel { width: 42px; }
 }
 
 /* ---------- Formulários e botões (compartilhados) ---------- */
@@ -1361,18 +1488,55 @@ button {
 .mt-2 { margin-top: 8px; }
 .mt-3 { margin-top: 14px; }
 
-/* ---------- Ajustes de tela ---------- */
-@media (max-width: 380px) {
-  .machine { padding-right: 24px; }
-  .lever { transform: scale(0.85); transform-origin: right center; }
-  .spin-btn { width: 86px; height: 86px; }
-  .spin-text { font-size: 16px; }
-  .deck-btn { min-width: 56px; padding: 8px 6px; }
+/* ---------- Celular/tela deitada e baixa: gabinete em 2 colunas ---------- */
+@media (min-aspect-ratio: 13/10) and (max-height: 640px) {
+  .game-body {
+    --u: min(1vh, 0.57vw, 5.2px);
+    --u: min(1dvh, 0.57vw, 5.2px);
+  }
+
+  .game-container {
+    width: min(100%, calc(var(--u) * 175));
+    min-height: 280px;
+  }
+
+  .topbar {
+    padding-block: max(calc(var(--u) * 1.5), env(safe-area-inset-top)) calc(var(--u) * 1.5);
+  }
+
+  .cabinet {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) calc(var(--u) * 64);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "topper pay"
+      "reels  led"
+      "reels  deck"
+      "reels  tray";
+    column-gap: calc(var(--u) * 3);
+    row-gap: calc(var(--u) * 2);
+    padding: calc(var(--u) * 2);
+  }
+
+  .topper { grid-area: topper; padding-block: calc(var(--u) * 0.8); }
+  .topper .mt-main { font-size: calc(var(--u) * 6.5); }
+  .topper .mt-sub { font-size: calc(var(--u) * 2.3); }
+  .topper .bulbs { height: calc(var(--u) * 2.4); }
+  .paytable { grid-area: pay; align-self: center; }
+  .paytable-note { display: none; }
+  .reel-stage { grid-area: reels; max-height: none; min-height: 0; }
+  .led-panel { grid-area: led; }
+  .deck { grid-area: deck; justify-content: center; padding-bottom: calc(var(--u) * 4); }
+  .coin-tray { grid-area: tray; margin-inline: 22%; }
+  .spin-btn { width: calc(var(--u) * 19); height: calc(var(--u) * 19); }
+  .lever { top: 22%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bulbs,
   .mt-sub,
+  .mini-reel,
+  .auth-card,
   .big-win-rays,
   .big-win-title,
   .spin-btn::after,

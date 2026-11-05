@@ -493,6 +493,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('canvas[data-sym]').forEach((cv) => SymbolRenderer.drawTo(cv, cv.dataset.sym));
   };
   drawPaytable();
+  let paytableTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(paytableTimer);
+    paytableTimer = setTimeout(drawPaytable, 150);
+  });
   // A faixa WILD usa a fonte Bungee: redesenha quando ela terminar de carregar
   if (document.fonts) {
     document.fonts.load('20px Bungee').then(() => {

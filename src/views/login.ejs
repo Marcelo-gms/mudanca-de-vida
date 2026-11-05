@@ -11,14 +11,17 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="auth-body">
-  <div class="auth-card">
+  <main class="auth-card">
     <div class="auth-header">
       <span class="bulbs" aria-hidden="true"></span>
       <h1 class="marquee-title">
         <span class="mt-main">Tigrinho</span>
         <span class="mt-sub">★ da Sorte ★</span>
       </h1>
-      <p>Acesse sua conta para jogar</p>
+      <div class="mini-reels" aria-hidden="true">
+        <span class="mini-reel"></span><span class="mini-reel"></span><span class="mini-reel"></span>
+      </div>
+      <p class="auth-lead">Acesse sua conta para jogar</p>
       <span class="bulbs bulbs-rev" aria-hidden="true"></span>
     </div>
 
@@ -34,7 +37,10 @@
 
       <div class="form-group">
         <label for="password">Senha</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" value="demo1234">
+        <div class="password-field">
+          <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" value="demo1234">
+          <button type="button" class="toggle-password" data-toggle-password="password" aria-pressed="false">Mostrar</button>
+        </div>
       </div>
 
       <div class="demo-hint">
@@ -48,6 +54,9 @@
     <div class="auth-footer">
       Não tem uma conta? <a href="/register">Cadastre-se grátis</a>
     </div>
-  </div>
+  </main>
+
+  <script src="/js/game/symbols.js"></script>
+  <script src="/js/auth.js"></script>
 </body>
 </html>

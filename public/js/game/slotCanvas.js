@@ -34,7 +34,9 @@ class SlotCanvas {
     this.teaseReel = -1;
 
     this.resize();
-    window.addEventListener('resize', () => this.resize());
+    // O tamanho do canvas depende do layout (não só da janela): observa o próprio elemento
+    if (window.ResizeObserver) new ResizeObserver(() => this.resize()).observe(this.canvas);
+    else window.addEventListener('resize', () => this.resize());
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
   }
@@ -48,6 +50,7 @@ class SlotCanvas {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = this.canvas.clientWidth || 340;
     const h = this.canvas.clientHeight || 250;
+    if (w === this.W && h === this.H && dpr === this.dpr) return;
     this.canvas.width = Math.round(w * dpr);
     this.canvas.height = Math.round(h * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -69,6 +72,17 @@ class SlotCanvas {
     v.addColorStop(0.8, 'rgba(25, 6, 0, 0.18)');
     v.addColorStop(1, 'rgba(25, 6, 0, 0.78)');
     this.shadeV = v;
+
+    // Faixa da linha premiada (linha central): fundo dourado iluminado, fixo na janela
+    const y0 = this.proj(-0.5);
+    const y1 = this.proj(0.5);
+    const band = this.ctx.createLinearGradient(0, y0, 0, y1);
+    band.addColorStop(0, '#f2b93c');
+    band.addColorStop(0.16, '#ffd978');
+    band.addColorStop(0.5, '#fff6d6');
+    band.addColorStop(0.84, '#ffd978');
+    band.addColorStop(1, '#f2b93c');
+    this.band = { y0, y1, fill: band };
     this.shadeH = [0, 1, 2].map((c) => {
       const x = this.reelX(c);
       const g = this.ctx.createLinearGradient(x, 0, x + this.reelW, 0);
@@ -221,6 +235,7 @@ class SlotCanvas {
     ctx.fillRect(0, 0, W, H);
 
     for (let c = 0; c < 3; c++) this.drawReel(c, time);
+    this.drawPaylineFrame(time);
     if (this.teaseReel >= 0) this.drawTease(time);
     if (this.win) this.drawWin(time, dt);
     this.drawSparks(dt);
@@ -246,8 +261,11 @@ class SlotCanvas {
     ctx.beginPath();
     ctx.rect(x, 0, w, H);
     ctx.clip();
+    const { y0: b0, y1: b1, fill: bandFill } = this.band;
     ctx.fillStyle = '#f7f0dc';
     ctx.fillRect(x, 0, w, H);
+    ctx.fillStyle = bandFill;
+    ctx.fillRect(x, b0, w, b1 - b0);
 
     for (let i = base - 1; i <= base + 4; i++) {
       const sTop = i - r.pos - VIEW;
@@ -267,10 +285,34 @@ class SlotCanvas {
       }
     }
 
+    // Linhas de cima e de baixo mais apagadas: o olho vai direto para a linha do meio
+    ctx.fillStyle = 'rgba(40, 12, 0, 0.24)';
+    ctx.fillRect(x, 0, w, b0);
+    ctx.fillRect(x, b1, w, H - b1);
+
     ctx.fillStyle = this.shadeV;
     ctx.fillRect(x, 0, w, H);
     ctx.fillStyle = this.shadeH[c];
     ctx.fillRect(x, 0, w, H);
+    ctx.restore();
+  }
+
+  /** Molduras douradas da faixa central, atravessando os 3 rolos. */
+  drawPaylineFrame(time) {
+    const { ctx, W } = this;
+    const { y0, y1 } = this.band;
+    ctx.save();
+    ctx.strokeStyle = '#ffcf4a';
+    ctx.shadowColor = '#ff9100';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = Math.max(2, this.unit * 0.03);
+    ctx.globalAlpha = this.win ? 1 : 0.8 + 0.2 * Math.sin(time * 2.5);
+    ctx.beginPath();
+    ctx.moveTo(0, y0);
+    ctx.lineTo(W, y0);
+    ctx.moveTo(0, y1);
+    ctx.lineTo(W, y1);
+    ctx.stroke();
     ctx.restore();
   }
 
