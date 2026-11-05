@@ -38,7 +38,31 @@ Pedido do usuário (2026-11-05, TCC): refazer o visual do jogo "como se fosse um
 - `prefers-reduced-motion`: desliga lâmpadas, raios, tremor, chafariz/chuva de moedas e animações decorativas.
 - Correção de bug herdado: em erro de rede/servidor os rolos continuavam girando para sempre. Agora `abortSpin()` freia os rolos e reabilita o botão.
 
+## Rodada 2 (feedback do usuário, 2026-11-05)
+
+Pedidos: deixar claro que se ganha na linha do meio, refazer admin e login, e **caber na tela e ser responsivo em todos os dispositivos**.
+
+### Linha premiada em destaque
+- Faixa dourada iluminada fixa atrás da linha central dos 3 rolos (`SlotCanvas.band`), com bordas douradas pulsando (`drawPaylineFrame`). Os símbolos passam por ela durante o giro.
+- Linhas de cima e de baixo levemente escurecidas, para o olho ir direto ao meio.
+- Marcadores laterais viraram setas douradas com brilho; texto da tabela: "Paga com 3 iguais na faixa dourada".
+
+### Responsividade (cabe na tela, sem rolagem)
+- Todo o gabinete é medido na unidade CSS `--u = min(1vw, 0.575dvh, 5.6px)`: limitada pela largura **e** pela altura, então a máquina inteira sempre cabe.
+- A janela dos rolos é um *container* (`container-type: size`) que ocupa o espaço que sobrar; o canvas usa `min(100cqw, …cqh)` para caber nas duas direções, e o `SlotCanvas` acompanha via `ResizeObserver`.
+- Celular deitado / telas baixas (`min-aspect-ratio: 13/10` e `max-height: 640px`): gabinete em 2 colunas (letreiro + rolos à esquerda, tabela + LEDs + botões à direita).
+- Verificado sem rolagem horizontal nem vertical em 320×568, 360×640, 375×667, 390×664, 390×844, 412×915, 768×1024, 1024×768, 1366×768, 1920×1080, 568×320, 667×375, 844×390 e 915×412.
+
+### Login e cadastro
+- Mini rolos em "modo atração" no letreiro (fita desenhada pelo `SymbolRenderer` em `public/js/auth.js`), botão Mostrar/Ocultar senha, cartão centralizado com `margin: auto` (não corta o topo em telas baixas).
+
+### Painel admin (remake completo)
+- Mesma identidade do jogo (bordô + dourado). Sidebar no desktop; no celular, barra superior + **abas fixas embaixo**.
+- KPIs com ícones e cores por tipo (4×2 no desktop, 2×4 no tablet, 1 coluna no celular); house edge fica vermelho quando negativo.
+- Tabelas viram cartões empilhados no celular (`data-label` em cada célula).
+- Sliders com trilho dourado preenchido, pesos dos rolos com a arte real dos símbolos, `alert()` trocado por toasts (`public/js/admin.js`).
+- **Correção de segurança (XSS):** a tela de usuários montava `onclick="openAdjustModal('<%= u.name %>')"`. O EJS escapa `'` como `&#39;`, mas o navegador decodifica isso antes de executar o JS do atributo, então um nome com aspas injetava script no painel do admin. Agora os dados ficam em `data-*` e um único listener lê `dataset`. O resultado do teste da SuitPay também passou a usar `textContent`.
+
 ## Em aberto
 
 - Giro automático (AUTO) não foi feito — não foi pedido.
-- Painel admin (`/admin`) mantém o visual antigo.
