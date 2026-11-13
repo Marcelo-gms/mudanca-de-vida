@@ -1,6 +1,6 @@
 # Especificação Técnica: Mini Plataforma iGaming Monolítica (Node.js + EJS + Canvas)
 
-Este documento atua como o **Plano de Contexto e Arquitetura** para desenvolvimento assistido por Inteligência Artificial no VS Code. Ele define as diretrizes matemáticas, de infraestrutura com a gateway **PushinPay**, e travas críticas de SecOps.
+Este documento atua como o **Plano de Contexto e Arquitetura** para desenvolvimento assistido por Inteligência Artificial no VS Code. Ele define as diretrizes matemáticas, de infraestrutura com a gateway **Asaas**, e travas críticas de SecOps.
 
 ---
 
@@ -15,7 +15,7 @@ A aplicação é estruturada como um monolito único em Node.js usando Express, 
 [Servidor Express Monolítico] 
       ├── Módulo 1: Motor Matemático (CSPRNG Criptográfico)
       ├── Módulo 2: Motor de Carteira & Transações (Seamless Interno)
-      └── Módulo 3: Integração via API/Webhooks com a PushinPay
+      └── Módulo 3: Integração via API/Webhooks com o Asaas
 ```
 
 ---
@@ -64,39 +64,42 @@ function gerarSimboloAleatorio() {
 
 ---
 
-## 3. Integração com a Gateway PushinPay
+## 3. Integração com a Gateway Asaas
 
-A comunicação financeira de Pay-in (Depósito) e Pay-out (Saque) utiliza o protocolo REST da PushinPay com Bearer Token injetado via variáveis de ambiente (`process.env`) ou configurado dinamicamente no painel administrativo `/admin/pushinpay`.
+A comunicação financeira de Pay-in (Depósito) e Pay-out (Saque) utiliza o protocolo REST do Asaas (API v3) com API Key injetada via variáveis de ambiente (`process.env`) ou configurado dinamicamente no painel administrativo `/admin/asaas`.
 
 ### 3.1 Credenciais e Configuração
-*   `PUSHINPAY_TOKEN`: Bearer token de autenticação (enviado no header `Authorization: Bearer <TOKEN>`)
-*   `PUSHINPAY_URL_BASE`: 
-    *   Produção: `https://api.pushinpay.com.br/api`
-    *   Sandbox: `https://api-sandbox.pushinpay.com.br/api`
-*   `ENABLE_PUSHINPAY_MOCK`: Booleano para simular QR Codes e saques localmente sem token ativo.
+*   `ASAAS_API_KEY`: chave de autenticação (enviada no header `access_token`)
+*   `ASAAS_URL_BASE`: 
+    *   Produção: `https://api.asaas.com/v3`
+    *   Sandbox: `https://api-sandbox.asaas.com/v3`
+*   `ASAAS_WEBHOOK_TOKEN`: token definido no cadastro do webhook; o Asaas o envia no header `asaas-access-token` (OBRIGATÓRIO em produção).
+*   `ENABLE_ASAAS_MOCK`: Booleano para simular QR Codes e saques localmente sem API Key ativa.
 
 ### 3.2 Endpoints e Payloads Mapeados
 
-#### A. Pay-in (Geração de Pix Copia e Cola / QR Code)
-*   **Endpoint:** `POST /api/pix/cashIn`
-*   **Campos Requeridos no Body:** 
-    *   `value` (inteiro em centavos, ex: R$ 20,00 = `2000`)
-    *   `webhook_url` (URL de retorno para notificação instantânea)
-*   **Retorno:** Objeto com `id` (armazenado como `external_reference`), `qr_code` (Pix copia e cola), `qr_code_base64` e `status: "created"`.
+> O Asaas trabalha com valores em **reais decimais** (`value: 20.00`); internamente o sistema usa centavos. A conversão fica isolada em `src/services/asaasService.js`.
 
-#### B. Pay-out (Envio de Saque Automatizado via Pix)
-*   **Endpoint:** `POST /api/pix/cashOut`
-*   **Campos Requeridos no Body:** 
-    *   `value` (inteiro em centavos)
-    *   `pix_key` (chave Pix, obrigatoriamente o CPF do titular)
-    *   `pix_key_type`: `"national_registration"` (CPF)
-    *   `receiver_national_registration`: Documento do recebedor (deve ser idêntico ao CPF cadastrado)
-    *   `webhook_url`: URL de confirmação do cash-out.
+#### A. Pay-in (Depósito Pix)
+1.  **Cliente:** `POST /v3/customers` com `{ name, cpfCnpj }` na primeira cobrança do usuário; o id retornado é persistido em `users.asaas_customer_id` para reuso.
+2.  **Cobrança:** `POST /v3/payments` com `{ customer, billingType: "PIX", value, dueDate, externalReference: <txId interno> }`.
+3.  **QR Code:** `GET /v3/payments/{id}/pixQrCode` retorna `{ encodedImage (base64), payload (copia-e-cola), expirationDate }`.
+*   O `payment.id` é armazenado em `transactions.external_reference`; o `externalReference` enviado é o `txId` interno (elo nos dois sentidos).
 
-#### C. Webhook de Confirmação de Pagamento
-*   **Endpoint da Aplicação:** `POST /api/webhooks/pushinpay`
-*   **Payload Recebido:** `{ id: number, status: "paid", value: number, end_to_end_id: string }`
-*   **Processamento Idempotente:** A transação é localizada pelo `external_reference` (o `id` retornado no cashIn). Se já estiver paga, responde HTTP 200 `{ status: "ALREADY_PROCESSED" }`. Quando confirmada, credita o saldo atomicamente e registra o `end_to_end_id` nos metadados.
+#### B. Pay-out (Saque Pix via Transfers)
+*   **Endpoint:** `POST /v3/transfers`
+*   **Body:** `{ value, operationType: "PIX", pixAddressKey: <CPF do titular>, pixAddressKeyType: "CPF" }`
+*   **Status possíveis:** `PENDING`, `BANK_PROCESSING`, `DONE`, `FAILED`, `CANCELLED`. Se não vier `DONE` na resposta síncrona, o saque permanece `PENDING` aguardando o webhook `TRANSFER_DONE`.
+
+#### C. Webhook de Confirmação
+*   **Endpoint da Aplicação:** `POST /api/webhooks/asaas`
+*   **Payload Recebido:** `{ event: "PAYMENT_RECEIVED" | "PAYMENT_CONFIRMED" | "TRANSFER_DONE" | "TRANSFER_FAILED" | "TRANSFER_CANCELLED", payment | transfer: { ... } }`
+*   **Defesas obrigatórias (implementadas):**
+    1.  Validação do header `asaas-access-token` contra `asaas_webhook_token`.
+    2.  Reconsulta do status real na API (`GET /v3/payments/{id}` ou `GET /v3/transfers/{id}`) antes de creditar/estornar.
+    3.  Crédito apenas de transações `type = 'DEPOSIT'`, sempre pelo `amount_cents` do banco (nunca pelo valor do payload).
+    4.  Idempotência: transação `COMPLETED` responde HTTP 200 `{ status: "ALREADY_PROCESSED" }`.
+    5.  Resposta 200 rápida: a fila de webhooks do Asaas pausa se o endpoint falhar repetidamente.
 
 ---
 
@@ -106,7 +109,7 @@ Para mitigar fraudes de abuso de bônus, ataques de concorrência ou brechas reg
 
 ### 4.1 Controle Extremo de Concorrência (Prevenção de Race Condition / Double Spending)
 *   **Risco:** O usuário clica simultaneamente em "Girar" ou "Sacar" usando múltiplos disparos assíncronos. Se o saldo for lido antes que a requisição anterior termine, o saldo ficará negativo.
-*   **Solução:** Sempre que a rota `/api/spin` ou `/api/wallet/withdraw` for acionada, a transação SQLite/WAL deve ser aberta no modo imediato (`db.transaction(...).immediate()`). O saldo deve ser decrementado **antes** do cálculo do PRNG ou da chamada externa de saque da PushinPay.
+*   **Solução:** Sempre que a rota `/api/spin` ou `/api/wallet/withdraw` for acionada, a transação SQLite/WAL deve ser aberta no modo imediato (`db.transaction(...).immediate()`). O saldo deve ser decrementado **antes** do cálculo do PRNG ou da chamada externa de saque do Asaas.
 
 ### 4.2 Regra de Rollover Estrita (Giro de Saldo)
 *   **Risco:** Usuário deposita via Pix, não joga, e solicita o saque imediatamente para limpar dinheiro de origem ilícita, gerando custo de taxas para a plataforma.
@@ -115,7 +118,7 @@ Para mitigar fraudes de abuso de bônus, ataques de concorrência ou brechas reg
 
 ### 4.3 Trava de CPF Casado (Anti-Fraude de Saque)
 *   **Risco:** Alguém descobre a senha de um usuário e solicita um saque transferindo o saldo para uma chave Pix de terceiros.
-*   **Solução:** O sistema só permite saques onde o tipo de chave seja `CPF` e o valor da chave corresponda exatamente ao CPF cadastrado pelo usuário (e validado pela PushinPay na transferência). É estritamente proibido enviar Payout para CPFs divergentes do titular da conta na plataforma.
+*   **Solução:** O sistema só permite saques onde o tipo de chave seja `CPF` e o valor da chave corresponda exatamente ao CPF cadastrado pelo usuário (e validado pelo Asaas na transferência). É estritamente proibido enviar Payout para CPFs divergentes do titular da conta na plataforma.
 
 ---
 
@@ -128,5 +131,5 @@ Para mitigar fraudes de abuso de bônus, ataques de concorrência ou brechas reg
 ---
 ## 6. Referências Técnicas para Alinhamento Lógico da IA
 A IA deve usar os padrões lógicos estruturais destes modelos conceituais para guiar o desenvolvimento das funções:
-*   [Documentação Oficial da PushinPay](https://pushinpay.com.br/)
+*   [Documentação Oficial do Asaas](https://docs.asaas.com/)
 *   [Lógica de Provably Fair Criptográfico (SHA-256/HMAC)](https://github.com/brave/provably-fair)

@@ -285,7 +285,43 @@ class WalletService {
   }
 
   /**
-   * Credita depósito confirmado via Webhook da PushinPay
+   * Vincula a referência externa (id da transferência no gateway) a um saque
+   * PENDING que aguarda confirmação assíncrona via webhook.
+   */
+  attachWithdrawalReference(transactionId, externalRef) {
+    if (!externalRef) return;
+    db.prepare(`
+      UPDATE transactions
+      SET external_reference = ?,
+          updated_at = datetime('now')
+      WHERE id = ? AND status = 'PENDING'
+    `).run(externalRef, transactionId);
+  }
+
+  /**
+   * Marca um saque PENDING para revisão manual quando a resposta da gateway
+   * é ambígua (timeout/5xx): o dinheiro PODE ter saído, então NÃO estorna.
+   */
+  flagWithdrawalForReview(transactionId, reason) {
+    const tx = db.prepare(`SELECT * FROM transactions WHERE id = ?`).get(transactionId);
+    if (!tx || tx.status !== 'PENDING') return;
+
+    let metadataObj = {};
+    try { metadataObj = JSON.parse(tx.metadata || '{}'); } catch (e) {}
+    metadataObj.needsManualReview = true;
+    metadataObj.reviewReason = reason;
+    metadataObj.flaggedAt = new Date().toISOString();
+
+    db.prepare(`
+      UPDATE transactions
+      SET metadata = ?,
+          updated_at = datetime('now')
+      WHERE id = ?
+    `).run(JSON.stringify(metadataObj), transactionId);
+  }
+
+  /**
+   * Credita depósito confirmado via Webhook do Asaas
    */
   creditDeposit(transactionId, amountCents, externalRef = null) {
     const executeCredit = db.transaction(() => {
@@ -294,17 +330,27 @@ class WalletService {
         throw new Error('Transação de depósito não localizada.');
       }
 
+      if (tx.type !== 'DEPOSIT') {
+        throw new Error('Transação não é um depósito: crédito negado.');
+      }
+
       if (tx.status === 'COMPLETED') {
         return { alreadyProcessed: true };
       }
 
+      if (tx.status === 'FAILED' || tx.status === 'CANCELLED') {
+        throw new Error(`Depósito em status ${tx.status} não pode ser creditado.`);
+      }
+
+      // Credita SEMPRE o valor registrado no banco, nunca o valor vindo do webhook
+      const creditCents = tx.amount_cents;
       db.prepare(`
         UPDATE users
         SET balance_cents = balance_cents + ?,
             total_deposited_cents = total_deposited_cents + ?,
             updated_at = datetime('now')
         WHERE id = ?
-      `).run(amountCents, amountCents, tx.user_id);
+      `).run(creditCents, creditCents, tx.user_id);
 
       const finalExtRef = tx.external_reference || externalRef;
       let metadataObj = {};
@@ -325,7 +371,7 @@ class WalletService {
       return {
         alreadyProcessed: false,
         userId: tx.user_id,
-        amountCents
+        amountCents: creditCents
       };
     });
 

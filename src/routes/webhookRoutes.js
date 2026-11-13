@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const webhookController = require('../controllers/webhookController');
+const { authMiddleware } = require('../middlewares/authMiddleware');
 
-// Webhook oficial PushinPay
-router.post('/pushinpay', (req, res) => webhookController.handlePushinpayWebhook(req, res));
+// Webhook oficial Asaas (autenticado pelo token `asaas-access-token`)
+router.post('/asaas', (req, res) => webhookController.handleAsaasWebhook(req, res));
 
-// Rota de compatibilidade
-router.post('/suitpay', (req, res) => webhookController.handlePushinpayWebhook(req, res));
-
-// Simulação de pagamento mock em desenvolvimento
-router.post('/mock-pay', (req, res) => webhookController.handleMockPay(req, res));
+// Simulação de pagamento mock em desenvolvimento (exige login: só credita a própria transação)
+router.post('/mock-pay', authMiddleware, (req, res) => webhookController.handleMockPay(req, res));
 
 module.exports = router;

@@ -6,7 +6,7 @@ Este documento deve ser lido por qualquer Inteligência Artificial ou desenvolve
 
 ## 1. Visão Geral da Aplicação
 
-O **Tigrinho2** é uma mini-plataforma iGaming monolítica em **Node.js + Express + EJS + HTML5 Canvas**, com persistência relacional em **SQLite (WAL mode com locks imediatos)** e integração financeira via Pix com a gateway **PushinPay** (`https://pushinpay.com.br/`).
+O **Tigrinho2** é uma mini-plataforma iGaming monolítica em **Node.js + Express + EJS + HTML5 Canvas**, com persistência relacional em **SQLite (WAL mode com locks imediatos)** e integração financeira via Pix com a gateway **Asaas** (`https://www.asaas.com/`).
 
 ### Principais Módulos do Sistema:
 1. **Motor Matemático (CSPRNG & PAR Model)**:
@@ -18,10 +18,10 @@ O **Tigrinho2** é uma mini-plataforma iGaming monolítica em **Node.js + Expres
    - Gestão atômica de saldo e prevenção contra Race Conditions / Double Spending.
    - Trava de Rollover Estrito (`total_apostado >= total_depositado * FatorRollover`).
    - Trava de CPF Casado (saques exclusivos para Pix CPF idêntico ao documento cadastrado).
-3. **Integração PushinPay**:
+3. **Integração Asaas**:
    - Pay-in (`POST /api/pix/cashIn`) com valores em centavos e retorno de `qr_code` e `qr_code_base64`.
    - Pay-out (`POST /api/pix/cashOut`) automatizado para chaves Pix do tipo `national_registration` (CPF).
-   - Webhook idempotente contra duplicidade de crédito (`/api/webhooks/pushinpay`).
+   - Webhook idempotente contra duplicidade de crédito (`/api/webhooks/asaas`).
    - Mock local automático e suporte a túnel público (`npm run tunnel` via Localtunnel ou Ngrok).
 4. **Painel Administrativo (`/admin`)**:
    - Métricas em tempo real: GGR (Lucro da Casa), Turnover, Payout, RTP Real, House Edge Real e Hit Frequency.
@@ -45,23 +45,23 @@ Qualquer código novo ou refatoração DEVE respeitar estas 6 diretrizes absolut
 
 ### ⚠️ Regra 2: Controle Atômico de Concorrência
 - **Diretriz:** Operações de débito de aposta (`processSpin`) e reserva de saque (`reserveWithdrawal`) em `src/services/walletService.js` devem sempre rodar dentro de `db.transaction(fn).immediate()`.
-- **Ordem de Operações:** O saldo do usuário DEVE ser verificado e debitado **antes** do sorteio matemático do PRNG ou de qualquer requisição externa à PushinPay.
+- **Ordem de Operações:** O saldo do usuário DEVE ser verificado e debitado **antes** do sorteio matemático do PRNG ou de qualquer requisição externa ao Asaas.
 - **Motivo:** Evitar Race Conditions onde cliques simultâneos causam Double Spending e deixam o saldo negativo.
 
 ### ⚠️ Regra 3: Valores Financeiros em Centavos Inteiros
-- **Diretriz:** No banco de dados e na lógica de negócio, saldos e valores NUNCA devem ser armazenados em números de ponto flutuante (`float`). Utilize sempre números inteiros representando centavos (`balance_cents`, `bet_cents`, `payout_cents`, `amount_cents`). A PushinPay também utiliza centavos nativamente no campo `value`.
+- **Diretriz:** No banco de dados e na lógica de negócio, saldos e valores NUNCA devem ser armazenados em números de ponto flutuante (`float`). Utilize sempre números inteiros representando centavos (`balance_cents`, `bet_cents`, `payout_cents`, `amount_cents`). ATENÇÃO: o Asaas utiliza REAIS em decimal no campo `value` — a conversão centavos↔reais fica isolada exclusivamente no `asaasService.js`.
 - **Motivo:** Eliminar imprecisões de representação IEEE 754 (ex: `0.1 + 0.2 !== 0.3`).
 
 ### ⚠️ Regra 4: Trava de CPF Casado Obrigatório
 - **Diretriz:** A rota de saque (`POST /api/wallet/withdraw`) só pode aceitar chave Pix do tipo `CPF`, e o valor da chave sanitizada deve ser estritamente igual ao `document` cadastrado pelo titular da conta (`user.document`).
-- **Motivo:** Prevenir que contas comprometidas transfiram saldo para chaves de terceiros. A própria PushinPay exige que o saque seja enviado para o CPF do titular.
+- **Motivo:** Prevenir que contas comprometidas transfiram saldo para chaves de terceiros. A próprio Asaas exige que o saque seja enviado para o CPF do titular.
 
 ### ⚠️ Regra 5: Trava de Rollover Estrito
 - **Diretriz:** O saque DEVE ser recusado se $\text{total\_wagered\_cents} < \text{total\_deposited\_cents} \times \text{rollover\_factor}$.
 - **Motivo:** Conformidade regulatória e proteção contra lavagem de dinheiro e custos operacionais de gateway.
 
 ### ⚠️ Regra 6: Idempotência Rigorosa nos Webhooks
-- **Diretriz:** Ao receber callback da PushinPay em `POST /api/webhooks/pushinpay`, consultar o status da transação. Se já estiver `COMPLETED`, responder sucesso e ignorar sem creditar novamente.
+- **Diretriz:** Ao receber callback do Asaas em `POST /api/webhooks/asaas`, consultar o status da transação. Se já estiver `COMPLETED`, responder sucesso e ignorar sem creditar novamente.
 - **Motivo:** Evitar crédito duplicado em caso de retentativas automáticas da gateway.
 
 ---
@@ -72,7 +72,7 @@ Qualquer código novo ou refatoração DEVE respeitar estas 6 diretrizes absolut
 tigrinho2/
 ├── package.json               # Configurações, dependências e scripts npm
 ├── Dockerfile / docker-compose.yml # Subida via Docker (ver docs/DOCKER.md)
-├── .env / .env.example        # Variáveis de ambiente (PORT, PUSHINPAY_TOKEN, Rollover)
+├── .env / .env.example        # Variáveis de ambiente (PORT, ASAAS_API_KEY, Rollover)
 ├── docs/
 │   ├── AI_GUIDE.md            # Este documento de orientação
 │   ├── ARCHITECTURE.md        # Especificação técnica original do projeto
@@ -91,13 +91,13 @@ tigrinho2/
 │   ├── services/
 │   │   ├── settingsService.js # Gestão em cache e banco de configurações dinâmicas
 │   │   ├── walletService.js   # Carteira atômica, travas de SecOps e métodos Admin
-│   │   ├── pushinpayService.js # Integração HTTP REST à PushinPay (CashIn, CashOut)
-│   │   └── mockPushinpayService.js # Mock de QR Code e Pix para testes locais
+│   │   ├── asaasService.js # Integração HTTP REST ao Asaas (CashIn, CashOut)
+│   │   └── mockAsaasService.js # Mock de QR Code e Pix para testes locais
 │   ├── controllers/
 │   │   ├── authController.js  # Cadastro, login e logout com bcrypt
 │   │   ├── gameController.js  # Rota de giro (/api/game/spin) e histórico
 │   │   ├── walletController.js# Depósito Pix, saque e saldo
-│   │   ├── webhookController.js# Webhook oficial (/api/webhooks/pushinpay) e mock
+│   │   ├── webhookController.js# Webhook oficial (/api/webhooks/asaas) e mock
 │   │   └── adminController.js # Páginas e APIs do painel administrativo
 │   ├── middlewares/
 │   │   ├── authMiddleware.js  # Autenticação de sessão de usuários
@@ -107,8 +107,8 @@ tigrinho2/
 │   │   ├── authRoutes.js      # /login, /register, /logout
 │   │   ├── gameRoutes.js      # /api/game/spin, /api/game/history
 │   │   ├── walletRoutes.js    # /api/wallet/me, /deposit, /withdraw, /transactions
-│   │   ├── webhookRoutes.js   # /api/webhooks/pushinpay, /api/webhooks/mock-pay
-│   │   └── adminRoutes.js     # /admin, /admin/users, /admin/rtp, /admin/pushinpay
+│   │   ├── webhookRoutes.js   # /api/webhooks/asaas, /api/webhooks/mock-pay
+│   │   └── adminRoutes.js     # /admin, /admin/users, /admin/rtp, /admin/asaas
 │   └── views/
 │       ├── layout.ejs
 │       ├── index.ejs          # Página principal do jogo (Canvas + Modais)
@@ -118,7 +118,7 @@ tigrinho2/
 │           ├── dashboard.ejs  # KPIs financeiros (GGR, Turnover, Payout, RTP)
 │           ├── users.ejs      # Gestão de usuários, saldo e rollover
 │           ├── rtp.ejs        # Calibração dinâmica de RTP e simulador
-│           └── pushinpay.ejs  # Configuração e testes da PushinPay e Webhooks
+│           └── asaas.ejs  # Configuração e testes do Asaas e Webhooks
 ├── public/
 │   ├── css/
 │   │   ├── style.css          # Estilo do gabinete do caça-níquel
@@ -171,7 +171,7 @@ npm run test:concurrency
 # Executar simulação matemática Monte Carlo de 100.000 giros (validação de RTP)
 npm run simulate-rtp
 
-# Iniciar o túnel público para receber Webhooks da PushinPay na porta 3000
+# Iniciar o túnel público para receber Webhooks do Asaas na porta 3000
 npm run tunnel
 
 # Iniciar o túnel alternativo via Ngrok (se configurado authtoken)

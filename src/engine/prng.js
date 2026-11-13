@@ -6,23 +6,35 @@ const { SYMBOLS, ROLO_CONFIG, TOTAL_WEIGHT } = require('./parSheet');
  * Suporta pesos dinâmicos configuráveis via painel de administração
  * @param {Object} [customWeights] - Ex: { TIGRE: 2, MOEDA: 8, BARRA: 20, LARANJA: 70 }
  */
+// Normaliza um peso vindo do painel admin: inteiro >= 0, senão usa o padrão
+function sanitizeWeight(value, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return fallback;
+  return Math.floor(n);
+}
+
 function gerarSimboloAleatorio(customWeights = null) {
   let config = ROLO_CONFIG;
   let totalWeight = TOTAL_WEIGHT;
 
   if (customWeights && typeof customWeights === 'object') {
     config = [
-      { ...SYMBOLS.TIGRE, peso: Number(customWeights.TIGRE) || 2 },
-      { ...SYMBOLS.MOEDA, peso: Number(customWeights.MOEDA) || 8 },
-      { ...SYMBOLS.BARRA, peso: Number(customWeights.BARRA) || 20 },
-      { ...SYMBOLS.LARANJA, peso: Number(customWeights.LARANJA) || 70 }
+      { ...SYMBOLS.TIGRE, peso: sanitizeWeight(customWeights.TIGRE, 2) },
+      { ...SYMBOLS.MOEDA, peso: sanitizeWeight(customWeights.MOEDA, 8) },
+      { ...SYMBOLS.BARRA, peso: sanitizeWeight(customWeights.BARRA, 20) },
+      { ...SYMBOLS.LARANJA, peso: sanitizeWeight(customWeights.LARANJA, 70) }
     ];
     totalWeight = config.reduce((acc, c) => acc + c.peso, 0);
+
+    // Pesos zerados/inválidos no total: volta para a configuração padrão segura
+    if (!Number.isInteger(totalWeight) || totalWeight <= 0) {
+      config = ROLO_CONFIG;
+      totalWeight = TOTAL_WEIGHT;
+    }
   }
 
-  // Geração de bytes aleatórios seguros sem Math.random()
-  const randomByte = crypto.randomBytes(4).readUInt32BE(0);
-  const numeroSorteado = randomByte % totalWeight;
+  // crypto.randomInt: CSPRNG uniforme sem viés de módulo
+  const numeroSorteado = crypto.randomInt(totalWeight);
 
   let somaPesos = 0;
   for (const simbolo of config) {

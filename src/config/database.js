@@ -79,11 +79,15 @@ function initSchema() {
     const tableInfo = db.prepare('PRAGMA table_info(users)').all();
     const hasRole = tableInfo.some(col => col.name === 'role');
     const hasStatus = tableInfo.some(col => col.name === 'status');
+    const hasAsaasCustomer = tableInfo.some(col => col.name === 'asaas_customer_id');
     if (!hasRole) {
       db.prepare("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'").run();
     }
     if (!hasStatus) {
       db.prepare("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'").run();
+    }
+    if (!hasAsaasCustomer) {
+      db.prepare('ALTER TABLE users ADD COLUMN asaas_customer_id TEXT').run();
     }
 
     // Migração de transactions para suportar ADJUSTMENT

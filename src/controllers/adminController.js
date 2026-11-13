@@ -1,6 +1,6 @@
 const walletService = require('../services/walletService');
 const settingsService = require('../services/settingsService');
-const pushinpayService = require('../services/pushinpayService');
+const asaasService = require('../services/asaasService');
 const { runSimulation } = require('../engine/slotEngine');
 const { db } = require('../config/database');
 
@@ -69,9 +69,9 @@ class AdminController {
     }
   }
 
-  renderPushinpaySettings(req, res) {
+  renderAsaasSettings(req, res) {
     try {
-      const pushinpayConfig = settingsService.getPushinpayConfig();
+      const asaasConfig = settingsService.getAsaasConfig();
       const recentWebhooks = db.prepare(`
         SELECT id, user_id, amount_cents, status, external_reference, created_at, metadata
         FROM transactions
@@ -80,21 +80,16 @@ class AdminController {
         LIMIT 10
       `).all();
 
-      res.render('admin/pushinpay', {
+      res.render('admin/asaas', {
         user: req.user,
-        pushinpayConfig,
+        asaasConfig,
         recentWebhooks,
-        activeTab: 'pushinpay'
+        activeTab: 'asaas'
       });
     } catch (err) {
-      console.error('[Admin PushinPay Error]:', err);
-      res.status(500).send('Erro ao carregar configurações da PushinPay.');
+      console.error('[Admin Asaas Error]:', err);
+      res.status(500).send('Erro ao carregar configurações do Asaas.');
     }
-  }
-
-  // Alias para retrocompatibilidade
-  renderSuitpaySettings(req, res) {
-    return this.renderPushinpaySettings(req, res);
   }
 
   // --- Ações de API ---
@@ -205,38 +200,29 @@ class AdminController {
     }
   }
 
-  savePushinpaySettings(req, res) {
+  saveAsaasSettings(req, res) {
     try {
-      const { token, urlBase, isMock, publicWebhookUrl } = req.body;
+      const { apiKey, urlBase, webhookToken, isMock, publicWebhookUrl } = req.body;
 
-      if (token !== undefined) settingsService.set('pushinpay_token', token.trim());
-      if (urlBase !== undefined) settingsService.set('pushinpay_url_base', urlBase.trim());
-      if (isMock !== undefined) settingsService.set('pushinpay_mock_mode', String(isMock));
+      if (apiKey !== undefined) settingsService.set('asaas_api_key', apiKey.trim());
+      if (urlBase !== undefined) settingsService.set('asaas_url_base', urlBase.trim());
+      if (webhookToken !== undefined) settingsService.set('asaas_webhook_token', webhookToken.trim());
+      if (isMock !== undefined) settingsService.set('asaas_mock_mode', String(isMock));
       if (publicWebhookUrl !== undefined) settingsService.set('public_webhook_url', publicWebhookUrl.trim());
 
-      return res.json({ success: true, message: 'Configurações da PushinPay atualizadas com sucesso!' });
+      return res.json({ success: true, message: 'Configurações do Asaas atualizadas com sucesso!' });
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }
   }
 
-  // Alias retrocompatibilidade
-  saveSuitpaySettings(req, res) {
-    return this.savePushinpaySettings(req, res);
-  }
-
-  async testPushinpayConnection(req, res) {
+  async testAsaasConnection(req, res) {
     try {
-      const result = await pushinpayService.testConnection();
+      const result = await asaasService.testConnection();
       return res.json(result);
     } catch (err) {
       return res.status(500).json({ success: false, message: err.message });
     }
-  }
-
-  // Alias retrocompatibilidade
-  async testSuitpayConnection(req, res) {
-    return this.testPushinpayConnection(req, res);
   }
 }
 

@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const walletService = require('../services/walletService');
-const pushinpayService = require('../services/pushinpayService');
+const asaasService = require('../services/asaasService');
 const { db } = require('../config/database');
 
 class WalletController {
@@ -37,34 +37,52 @@ class WalletController {
         txId,
         req.user.id,
         parsedAmount,
-        JSON.stringify({ requestedAt: new Date().toISOString(), gateway: 'PushinPay' })
+        JSON.stringify({ requestedAt: new Date().toISOString(), gateway: 'Asaas' })
       );
 
-      // Solicita Cobrança Pix na PushinPay
-      const pushinpayResponse = await pushinpayService.requestPixCashIn({
-        amountCents: parsedAmount
-      });
+      // Dados completos do usuário (inclui asaas_customer_id para reuso de cliente)
+      const fullUser = db.prepare(`
+        SELECT id, name, document, email, asaas_customer_id FROM users WHERE id = ?
+      `).get(req.user.id);
 
-      // Salva referência externa do ID da transação na PushinPay
-      if (pushinpayResponse?.id) {
+      // Solicita Cobrança Pix no Asaas
+      let gatewayResponse;
+      try {
+        gatewayResponse = await asaasService.requestPixCashIn({
+          user: fullUser,
+          amountCents: parsedAmount,
+          txId
+        });
+      } catch (gatewayErr) {
+        // Não deixa transação PENDING órfã quando a gateway falha
+        db.prepare(`
+          UPDATE transactions
+          SET status = 'FAILED', metadata = json_set(COALESCE(metadata, '{}'), '$.error', ?), updated_at = datetime('now')
+          WHERE id = ?
+        `).run(String(gatewayErr.message || 'Falha na gateway'), txId);
+        throw gatewayErr;
+      }
+
+      // Salva referência externa do ID da cobrança no Asaas
+      if (gatewayResponse?.id) {
         db.prepare(`
           UPDATE transactions
           SET external_reference = ?
           WHERE id = ?
-        `).run(pushinpayResponse.id, txId);
+        `).run(gatewayResponse.id, txId);
       }
 
       return res.json({
         success: true,
         transactionId: txId,
-        externalId: pushinpayResponse.id,
+        externalId: gatewayResponse.id,
         amountFormatted: (parsedAmount / 100).toFixed(2),
-        paymentCode: pushinpayResponse.qr_code,
-        paymentCodeBase64: pushinpayResponse.qr_code_base64
+        paymentCode: gatewayResponse.qr_code,
+        paymentCodeBase64: gatewayResponse.qr_code_base64
       });
     } catch (err) {
       console.error('[Deposit Error]:', err);
-      return res.status(400).json({ error: err.message || 'Falha ao gerar Pix para depósito via PushinPay.' });
+      return res.status(400).json({ error: err.message || 'Falha ao gerar Pix para depósito via Asaas.' });
     }
   }
 
@@ -86,33 +104,53 @@ class WalletController {
         pixType
       );
 
-      // 2. Dispara transferência Pix de Saque na PushinPay
-      const payoutResult = await pushinpayService.requestPixCashOut({
+      // 2. Dispara transferência Pix de Saque no Asaas
+      const payoutResult = await asaasService.requestPixCashOut({
         amountCents: parsedAmount,
         pixKey: reservation.pixKey,
         receiverDocument: reservation.user.document.replace(/\D/g, '')
       });
 
-      // 3. Finaliza com sucesso
-      walletService.finalizeWithdrawal(
-        reservation.transactionId,
-        true,
-        payoutResult?.id || null
-      );
+      // 3. Concilia conforme o status real da transferência no Asaas
+      const transferStatus = String(payoutResult?.status || '').toUpperCase();
+
+      if (['FAILED', 'CANCELLED'].includes(transferStatus)) {
+        walletService.finalizeWithdrawal(reservation.transactionId, false, payoutResult?.id || null, `Transferência ${transferStatus} no Asaas.`);
+        return res.status(400).json({ success: false, error: 'A transferência Pix foi recusada pelo gateway. O valor foi estornado ao seu saldo.' });
+      }
+
+      if (transferStatus === 'DONE') {
+        walletService.finalizeWithdrawal(reservation.transactionId, true, payoutResult?.id || null);
+      } else {
+        // PENDING / BANK_PROCESSING: guarda a referência e aguarda o webhook TRANSFER_DONE
+        walletService.attachWithdrawalReference(reservation.transactionId, payoutResult?.id || null);
+      }
 
       const updatedWallet = walletService.getUserWallet(req.user.id);
 
       return res.json({
         success: true,
-        message: 'Saque processado com sucesso!',
+        message: transferStatus === 'DONE'
+          ? 'Saque processado com sucesso!'
+          : 'Saque solicitado! A transferência Pix está em processamento.',
         transactionId: reservation.transactionId,
         newBalanceFormatted: updatedWallet.balanceFormatted
       });
     } catch (err) {
       console.error('[Withdraw Error]:', err.message);
 
-      // Se a reserva chegou a ser feita e falhou no envio externo, efetua o estorno atômico
       if (reservation?.transactionId) {
+        if (err.ambiguous) {
+          // Timeout/5xx: o Pix PODE ter sido enviado pela gateway.
+          // Estornar aqui permitiria saque duplicado; mantém PENDING para revisão manual.
+          walletService.flagWithdrawalForReview(reservation.transactionId, err.message);
+          return res.status(202).json({
+            success: false,
+            pendingReview: true,
+            error: 'Seu saque está em processamento. Se o valor não chegar em alguns minutos, contate o suporte.'
+          });
+        }
+        // Recusa explícita da gateway (4xx): estorno atômico seguro
         walletService.finalizeWithdrawal(reservation.transactionId, false, null, err.message);
       }
 

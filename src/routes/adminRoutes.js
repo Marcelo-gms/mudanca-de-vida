@@ -12,8 +12,7 @@ router.use(adminMiddleware);
 router.get('/', (req, res) => adminController.renderDashboard(req, res));
 router.get('/users', (req, res) => adminController.renderUsers(req, res));
 router.get('/rtp', (req, res) => adminController.renderRtpSettings(req, res));
-router.get('/pushinpay', (req, res) => adminController.renderPushinpaySettings(req, res));
-router.get('/suitpay', (req, res) => res.redirect('/admin/pushinpay'));
+router.get('/asaas', (req, res) => adminController.renderAsaasSettings(req, res));
 
 // APIs Administrativas
 router.post('/api/users/adjust-balance', (req, res) => adminController.adjustBalance(req, res));
@@ -23,12 +22,8 @@ router.post('/api/users/toggle-role', (req, res) => adminController.toggleUserRo
 router.post('/api/rtp/save', (req, res) => adminController.saveRtpSettings(req, res));
 router.post('/api/rtp/simulate', (req, res) => adminController.simulateLive(req, res));
 
-// PushinPay APIs
-router.post('/api/pushinpay/save', (req, res) => adminController.savePushinpaySettings(req, res));
-router.post('/api/pushinpay/test', (req, res) => adminController.testPushinpayConnection(req, res));
-
-// Alias para compatibilidade
-router.post('/api/suitpay/save', (req, res) => adminController.savePushinpaySettings(req, res));
-router.post('/api/suitpay/test', (req, res) => adminController.testPushinpayConnection(req, res));
+// Asaas APIs
+router.post('/api/asaas/save', (req, res) => adminController.saveAsaasSettings(req, res));
+router.post('/api/asaas/test', (req, res) => adminController.testAsaasConnection(req, res));
 
 module.exports = router;

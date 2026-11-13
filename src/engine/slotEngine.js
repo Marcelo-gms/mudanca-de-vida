@@ -104,8 +104,10 @@ function spinReels(betCents, clientSeed = 'default_client_seed', nonce = 1, over
   // Feature: "Modo Tigre da Sorte" (Fortune Tiger Respin Feature)
   // Calibrada dinamicamente via CSPRNG de acordo com a configuração de RTP
   let fortuneTigerBonus = false;
-  const bonusChancePerThousand = Math.round(bonusChance * 10); // Ex: 3.0% = 30
-  const bonusRandom = crypto.randomBytes(2).readUInt16BE(0) % 1000;
+  // Clamp 0–100% e sorteio uniforme sem viés de módulo (crypto.randomInt)
+  const safeBonusChance = Math.min(100, Math.max(0, bonusChance));
+  const bonusChancePerThousand = Math.round(safeBonusChance * 10); // Ex: 3.0% = 30
+  const bonusRandom = crypto.randomInt(1000);
 
   if (bonusRandom < bonusChancePerThousand) {
     fortuneTigerBonus = true;

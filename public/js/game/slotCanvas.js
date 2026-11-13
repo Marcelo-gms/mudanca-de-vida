@@ -32,6 +32,10 @@ class SlotCanvas {
     this.sparks = [];
     this.flash = 0;
     this.teaseReel = -1;
+    this.popups = []; // textos "x50" que pulam na tela
+    this.waves = []; // anéis de choque nas células premiadas
+    this.glint = { next: performance.now() / 1000 + 3, t: -1 }; // reflexo de vitrine quando parado
+    this.reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
     this.resize();
     // O tamanho do canvas depende do layout (não só da janela): observa o próprio elemento
@@ -107,6 +111,8 @@ class SlotCanvas {
   startSpin() {
     this.win = null;
     this.sparks.length = 0;
+    this.popups.length = 0;
+    this.waves.length = 0;
     this.teaseReel = -1;
     this.spinning = true;
     this.spinStart = performance.now();
@@ -182,7 +188,20 @@ class SlotCanvas {
       this.hits.forEach((h) => (h.coords || []).forEach(([row, col]) => cells.add(row * 3 + col)));
       this.win = { hits: this.hits, cells, t0: performance.now() / 1000 };
       this.flash = 0.5;
-      cells.forEach((k) => this.burst(Math.floor(k / 3), k % 3, 14));
+      cells.forEach((k) => {
+        this.burst(Math.floor(k / 3), k % 3, 14);
+        this.waves.push({ row: Math.floor(k / 3), col: k % 3, t: 0 });
+      });
+      // "x50" saltando no centro da janela, proporcional ao tamanho do prêmio
+      const totalMult = this.hits.reduce((acc, h) => acc + (h.multiplier || 0), 0);
+      if (totalMult > 0) {
+        this.popups.push({
+          text: `${parseFloat(totalMult.toFixed(2))}x`,
+          t: 0,
+          dur: this.reduceMotion ? 1.1 : totalMult >= 20 ? 2.2 : 1.6,
+          big: totalMult >= 10
+        });
+      }
     }
     const cb = this.onComplete;
     this.onComplete = null;
@@ -238,7 +257,10 @@ class SlotCanvas {
     this.drawPaylineFrame(time);
     if (this.teaseReel >= 0) this.drawTease(time);
     if (this.win) this.drawWin(time, dt);
+    this.drawWaves(dt);
     this.drawSparks(dt);
+    this.drawPopups(dt);
+    this.drawGlint(time);
 
     if (this.flash > 0) {
       ctx.fillStyle = `rgba(255, 240, 200, ${this.flash})`;
@@ -320,6 +342,19 @@ class SlotCanvas {
     const { ctx } = this;
     const x = this.reelX(this.teaseReel);
     ctx.save();
+    // Holofote: escurece os rolos já parados para todo o olhar ir ao rolo do suspense
+    ctx.fillStyle = 'rgba(8, 2, 0, 0.5)';
+    for (let c = 0; c < 3; c++) {
+      if (c === this.teaseReel) continue;
+      ctx.fillRect(this.reelX(c) - this.gap / 2, 0, this.reelW + this.gap, this.H);
+    }
+    // Calor dourado subindo atrás do rolo em suspense
+    const heat = ctx.createRadialGradient(x + this.reelW / 2, this.H / 2, 0, x + this.reelW / 2, this.H / 2, this.reelW);
+    heat.addColorStop(0, `rgba(255, 150, 0, ${0.12 + 0.1 * Math.sin(time * 9)})`);
+    heat.addColorStop(1, 'rgba(255, 150, 0, 0)');
+    ctx.fillStyle = heat;
+    ctx.fillRect(x - this.gap, 0, this.reelW + this.gap * 2, this.H);
+
     ctx.strokeStyle = '#ffd34d';
     ctx.shadowColor = '#ff8a00';
     ctx.shadowBlur = 24;
@@ -423,6 +458,108 @@ class SlotCanvas {
       ctx.fill();
       ctx.restore();
     }
+  }
+
+  /** Anéis de choque dourados expandindo das células premiadas. */
+  drawWaves(dt) {
+    const { ctx } = this;
+    for (let i = this.waves.length - 1; i >= 0; i--) {
+      const wv = this.waves[i];
+      wv.t += dt;
+      const k = wv.t / 0.6;
+      if (k >= 1) {
+        this.waves.splice(i, 1);
+        continue;
+      }
+      const cx = this.reelX(wv.col) + this.reelW / 2;
+      const cy = this.proj(wv.row - 1);
+      const r = this.symSize * (0.35 + k * 1.15);
+      ctx.save();
+      ctx.globalAlpha = (1 - k) * 0.85;
+      ctx.strokeStyle = '#ffd34d';
+      ctx.shadowColor = '#ff9d00';
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 1 + 3 * (1 - k);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /** Multiplicador "x50" saltando no centro da janela com entrada elástica. */
+  drawPopups(dt) {
+    const { ctx, W, H } = this;
+    for (let i = this.popups.length - 1; i >= 0; i--) {
+      const p = this.popups[i];
+      p.t += dt;
+      const k = p.t / p.dur;
+      if (k >= 1) {
+        this.popups.splice(i, 1);
+        continue;
+      }
+      // Entrada com overshoot elástico, saída subindo e esmaecendo
+      const inK = Math.min(1, p.t / 0.3);
+      const back = 1.70158 * 1.525;
+      const e = inK - 1;
+      const scaleIn = e * e * ((back + 1) * e + back) + 1; // easeOutBack 0→1 com overshoot
+      const scale = this.reduceMotion ? 1 : 0.4 + 0.6 * scaleIn;
+      const fadeOut = k > 0.72 ? 1 - (k - 0.72) / 0.28 : 1;
+      const rise = k > 0.72 ? (k - 0.72) * H * 0.3 : 0;
+      const size = Math.min(W, H) * (p.big ? 0.36 : 0.26) * scale;
+      const wobble = this.reduceMotion ? 0 : Math.sin(p.t * 10) * 0.035;
+
+      ctx.save();
+      ctx.translate(W / 2, H / 2 - rise);
+      ctx.rotate(wobble);
+      ctx.globalAlpha = Math.max(0, fadeOut);
+      ctx.font = `${Math.round(size)}px Bungee, Montserrat, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
+      // contorno escuro + brilho
+      ctx.shadowColor = 'rgba(255, 157, 0, 0.9)';
+      ctx.shadowBlur = 22;
+      ctx.strokeStyle = '#5a1403';
+      ctx.lineWidth = Math.max(3, size * 0.09);
+      ctx.strokeText(p.text, 0, 0);
+      ctx.shadowBlur = 0;
+      const grad = ctx.createLinearGradient(0, -size / 2, 0, size / 2);
+      grad.addColorStop(0, '#fffbe0');
+      grad.addColorStop(0.45, '#ffd34d');
+      grad.addColorStop(0.62, '#e08a00');
+      grad.addColorStop(1, '#fff0a8');
+      ctx.fillStyle = grad;
+      ctx.fillText(p.text, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  /** Reflexo de vitrine varrendo os rolos quando a máquina está parada (modo "attract"). */
+  drawGlint(time) {
+    if (this.reduceMotion || this.spinning) return;
+    if (this.glint.t < 0) {
+      if (time >= this.glint.next) this.glint.t = time;
+      else return;
+    }
+    const k = (time - this.glint.t) / 0.9;
+    if (k >= 1) {
+      this.glint.t = -1;
+      this.glint.next = time + 3.5 + Math.random() * 2.5;
+      return;
+    }
+    const { ctx, W, H } = this;
+    const x = -W * 0.35 + k * W * 1.7;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.transform(1, 0, -0.35, 1, 0, 0);
+    const g = ctx.createLinearGradient(x - W * 0.16, 0, x + W * 0.16, 0);
+    g.addColorStop(0, 'rgba(255, 240, 190, 0)');
+    g.addColorStop(0.5, 'rgba(255, 240, 190, 0.18)');
+    g.addColorStop(1, 'rgba(255, 240, 190, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - W * 0.2, 0, W * 0.4, H);
+    ctx.restore();
   }
 }
 

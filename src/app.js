@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const env = require('./config/env');
 const { authMiddleware, optionalAuthMiddleware } = require('./middlewares/authMiddleware');
 const walletService = require('./services/walletService');
+const settingsService = require('./services/settingsService');
 
 const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
@@ -60,7 +61,8 @@ app.get('/', authMiddleware, (req, res) => {
   res.render('index', {
     user: req.user,
     wallet,
-    isMockEnabled: env.pushinpay.enableMock
+    // Botão "simular pagamento" só aparece com mock ativo e fora de produção
+    isMockEnabled: settingsService.getAsaasConfig().isMock && env.nodeEnv !== 'production'
   });
 });
 

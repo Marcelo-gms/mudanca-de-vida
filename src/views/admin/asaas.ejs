@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tigrinho Admin | Asaas e Webhooks Pix</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <%- include('header') %>
+
+    <main class="admin-content">
+      <div class="page-title-row">
+        <div>
+          <h2>Integração Gateway Asaas & Webhooks Pix</h2>
+          <p>Configure a API Key do Asaas (Produção ou Sandbox), o token do webhook, teste a conectividade e gerencie o endpoint público.</p>
+        </div>
+        <span class="<%= asaasConfig.isMock ? 'badge-warning' : 'badge-success' %> badge-lg">
+          <%= asaasConfig.isMock ? '🧪 Modo Mock Ativo' : '⚡ Modo Real Ativo' %>
+        </span>
+      </div>
+
+      <div class="admin-grid-2">
+        <!-- Configuração Asaas -->
+        <div class="admin-panel-card">
+          <div class="panel-card-head">
+            <h3>🔑 Credenciais da API Asaas</h3>
+          </div>
+
+          <form id="asaasForm" class="mt-3">
+            <div class="form-group">
+              <label for="asaasMockMode">Modo de Operação:</label>
+              <select id="asaasMockMode" class="admin-input">
+                <option value="true" <%= asaasConfig.isMock ? 'selected' : '' %>>🧪 Modo Mock (Simulação Local sem API Key)</option>
+                <option value="false" <%= !asaasConfig.isMock ? 'selected' : '' %>>⚡ Modo Real (Asaas Produção / Sandbox)</option>
+              </select>
+              <small class="field-hint">No modo real as requisições Pix são processadas diretamente pelo Asaas.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="asaasApiKey">ASAAS_API_KEY <span class="text-muted">(chave de acesso da conta)</span>:</label>
+              <input
+                type="password"
+                id="asaasApiKey"
+                value="<%= asaasConfig.apiKey %>"
+                placeholder="Cole aqui sua API Key do Asaas ($aact_...)"
+                class="admin-input"
+                autocomplete="off"
+              />
+              <small class="field-hint">Obtenha no painel do Asaas em <em>Integrações &gt; API</em>.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="asaasUrlBase">URL Base da API:</label>
+              <select id="asaasUrlBaseSelect" class="admin-input mb-1" onchange="document.getElementById('asaasUrlBase').value = this.value">
+                <option value="https://api.asaas.com/v3" <%= asaasConfig.urlBase.includes('sandbox') ? '' : 'selected' %>>Produção: https://api.asaas.com/v3</option>
+                <option value="https://api-sandbox.asaas.com/v3" <%= asaasConfig.urlBase.includes('sandbox') ? 'selected' : '' %>>Sandbox: https://api-sandbox.asaas.com/v3</option>
+              </select>
+              <input
+                type="text"
+                id="asaasUrlBase"
+                value="<%= asaasConfig.urlBase %>"
+                placeholder="https://api.asaas.com/v3"
+                class="admin-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="asaasWebhookToken">Token do Webhook <span class="text-muted">(authToken)</span>:</label>
+              <input
+                type="password"
+                id="asaasWebhookToken"
+                value="<%= asaasConfig.webhookToken %>"
+                placeholder="Token enviado pelo Asaas no header asaas-access-token"
+                class="admin-input"
+                autocomplete="off"
+              />
+              <small class="field-hint">Defina o mesmo valor ao cadastrar o webhook no painel do Asaas. <strong>Obrigatório em produção.</strong></small>
+            </div>
+
+            <div class="form-group">
+              <label for="publicWebhookUrl">URL Pública do Webhook:</label>
+              <input
+                type="text"
+                id="publicWebhookUrl"
+                value="<%= asaasConfig.publicWebhookUrl %>"
+                placeholder="Ex: https://seu-dominio.com/api/webhooks/asaas"
+                class="admin-input"
+              />
+              <small class="field-hint">Cadastre esta URL no painel do Asaas (Integrações &gt; Webhooks) com os eventos de cobrança e transferência.</small>
+            </div>
+
+            <div class="action-btn-row mt-4">
+              <button type="button" class="btn-secondary" id="btnTestAsaas">
+                🔌 Testar Conexão (Ping)
+              </button>
+              <button type="submit" class="btn-primary">
+                💾 Salvar Configurações
+              </button>
+            </div>
+          </form>
+
+          <!-- Status do Teste -->
+          <div id="testConnResult" class="mt-3" style="display: none;"></div>
+        </div>
+
+        <!-- Instruções de Webhook -->
+        <div class="admin-panel-card">
+          <div class="panel-card-head">
+            <h3>🌐 Webhook: eventos e túnel local</h3>
+          </div>
+          <p class="modal-desc">Cadastre o webhook no Asaas com os eventos <code>PAYMENT_RECEIVED</code>, <code>PAYMENT_CONFIRMED</code>, <code>TRANSFER_DONE</code>, <code>TRANSFER_FAILED</code> e <code>TRANSFER_CANCELLED</code>.</p>
+
+          <div class="tunnel-box">
+            <h4>Testando em ambiente local</h4>
+            <p>Execute no terminal do projeto para expor o servidor:</p>
+            <code>npm run tunnel</code>
+            <p class="mt-2 text-muted">A URL gerada (ex: <code>https://xxxxx.loca.lt/api/webhooks/asaas</code>) deve ser cadastrada no painel do Asaas.</p>
+          </div>
+
+          <div class="tunnel-box mt-3">
+            <h4>Formato da Rota de Webhook:</h4>
+            <code>POST /api/webhooks/asaas</code>
+            <small class="text-muted mt-1" style="display:block;">
+              O Asaas envia <code>{ "event": "PAYMENT_RECEIVED", "payment": { ... } }</code> com o token no header <code>asaas-access-token</code>.
+              O sistema valida o token, reconsulta o status na API e credita o saldo atomicamente com trava de idempotência.
+            </small>
+          </div>
+
+          <div class="tunnel-box mt-3">
+            <h4>⚠️ Fila de webhooks do Asaas</h4>
+            <small class="text-muted" style="display:block;">
+              O Asaas entrega webhooks em fila sequencial e <strong>pausa a fila</strong> se o endpoint responder erro repetidamente.
+              Se os depósitos pararem de confirmar, verifique a fila em <em>Integrações &gt; Webhooks</em> no painel do Asaas e reative-a.
+            </small>
+          </div>
+
+          <!-- Histórico de Depósitos Recebidos -->
+          <div class="mt-4">
+            <h4>Últimos Depósitos Registrados:</h4>
+            <div class="table-responsive mt-2">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>ID Asaas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (recentWebhooks.length > 0) { %>
+                    <% recentWebhooks.forEach(w => { %>
+                      <tr>
+                        <td><%= new Date(w.created_at).toLocaleTimeString('pt-BR') %></td>
+                        <td>R$ <%= (w.amount_cents / 100).toFixed(2) %></td>
+                        <td>
+                          <span class="<%= w.status === 'COMPLETED' ? 'badge-success' : 'badge-warning' %>">
+                            <%= w.status %>
+                          </span>
+                        </td>
+                        <td><code><%= w.external_reference || w.id.substring(0, 8) + '...' %></code></td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr><td colspan="4" style="text-align: center;">Nenhum depósito recebido ainda.</td></tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Salvar Configurações
+    document.getElementById('asaasForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        isMock: document.getElementById('asaasMockMode').value === 'true',
+        apiKey: document.getElementById('asaasApiKey').value,
+        urlBase: document.getElementById('asaasUrlBase').value,
+        webhookToken: document.getElementById('asaasWebhookToken').value,
+        publicWebhookUrl: document.getElementById('publicWebhookUrl').value
+      };
+
+      try {
+        const res = await fetch('/admin/api/asaas/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Configurações do Asaas salvas com sucesso!');
+          location.reload();
+        } else {
+          alert(data.error);
+        }
+      } catch (err) {
+        alert('Erro ao salvar: ' + err.message);
+      }
+    });
+
+    // Testar Conexão
+    document.getElementById('btnTestAsaas').addEventListener('click', async () => {
+      const btn = document.getElementById('btnTestAsaas');
+      const resultBox = document.getElementById('testConnResult');
+      btn.disabled = true;
+      btn.textContent = 'Testando...';
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<span class="text-muted">Enviando requisição de teste para o Asaas...</span>';
+
+      try {
+        const res = await fetch('/admin/api/asaas/test', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          resultBox.innerHTML = `
+            <div class="alert-success">
+              ✅ <strong>${data.mode}</strong>: ${data.message}
+            </div>
+          `;
+        } else {
+          resultBox.innerHTML = `
+            <div class="alert-error">
+              ❌ Falha no teste: ${data.message}
+            </div>
+          `;
+        }
+      } catch (err) {
+        resultBox.innerHTML = `<div class="alert-error">Erro: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔌 Testar Conexão (Ping)';
+      }
+    });
+  </script>
+</body>
+</html>

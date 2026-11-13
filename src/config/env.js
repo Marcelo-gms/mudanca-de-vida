@@ -5,10 +5,11 @@ const env = {
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   sessionSecret: process.env.SESSION_SECRET || 'tigrinho-monolith-fallback-secret-key-12345',
-  pushinpay: {
-    token: process.env.PUSHINPAY_TOKEN || '',
-    urlBase: process.env.PUSHINPAY_URL_BASE || 'https://api.pushinpay.com.br/api',
-    enableMock: process.env.ENABLE_PUSHINPAY_MOCK === 'true' || !process.env.PUSHINPAY_TOKEN || process.env.PUSHINPAY_TOKEN === 'mock_pushinpay_token'
+  asaas: {
+    apiKey: process.env.ASAAS_API_KEY || '',
+    urlBase: process.env.ASAAS_URL_BASE || 'https://api.asaas.com/v3',
+    webhookToken: process.env.ASAAS_WEBHOOK_TOKEN || '',
+    enableMock: process.env.ENABLE_ASAAS_MOCK === 'true' || !process.env.ASAAS_API_KEY
   },
   rolloverFactor: parseFloat(process.env.ROLLOVER_FACTOR) || 1.0,
   dbFile: process.env.DB_FILE || 'data/tigrinho.sqlite'

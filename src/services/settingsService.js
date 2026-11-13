@@ -8,11 +8,23 @@ const DEFAULT_SETTINGS = {
   symbol_weights: JSON.stringify({ TIGRE: 2, MOEDA: 8, BARRA: 20, LARANJA: 70 }),
   min_deposit_cents: '500',
   min_withdraw_cents: '1000',
-  pushinpay_token: env.pushinpay?.token || '',
-  pushinpay_url_base: env.pushinpay?.urlBase || 'https://api.pushinpay.com.br/api',
-  pushinpay_mock_mode: String(env.pushinpay?.enableMock ?? true),
+  asaas_api_key: env.asaas?.apiKey || '',
+  asaas_url_base: env.asaas?.urlBase || 'https://api.asaas.com/v3',
+  asaas_webhook_token: env.asaas?.webhookToken || '',
+  asaas_mock_mode: String(env.asaas?.enableMock ?? true),
   public_webhook_url: ''
 };
+
+// Chaves do gateway antigo (PushinPay/SuitPay) removidas na migração para o Asaas
+const LEGACY_SETTING_KEYS = [
+  'pushinpay_token',
+  'pushinpay_url_base',
+  'pushinpay_mock_mode',
+  'suitpay_client_id',
+  'suitpay_client_secret',
+  'suitpay_url_base',
+  'suitpay_mock_mode'
+];
 
 class SettingsService {
   constructor() {
@@ -28,6 +40,12 @@ class SettingsService {
 
     for (const [key, val] of Object.entries(DEFAULT_SETTINGS)) {
       insertStmt.run(key, val);
+    }
+
+    // Limpa configurações do gateway legado
+    const deleteStmt = db.prepare('DELETE FROM system_settings WHERE key = ?');
+    for (const key of LEGACY_SETTING_KEYS) {
+      deleteStmt.run(key);
     }
   }
 
@@ -93,18 +111,14 @@ class SettingsService {
     return parseFloat(this.get('rollover_factor')) || 1.0;
   }
 
-  getPushinpayConfig() {
+  getAsaasConfig() {
     return {
-      token: this.get('pushinpay_token'),
-      urlBase: this.get('pushinpay_url_base'),
-      isMock: this.get('pushinpay_mock_mode') === 'true',
+      apiKey: this.get('asaas_api_key'),
+      urlBase: this.get('asaas_url_base'),
+      webhookToken: this.get('asaas_webhook_token'),
+      isMock: this.get('asaas_mock_mode') === 'true',
       publicWebhookUrl: this.get('public_webhook_url')
     };
-  }
-
-  // Compatibilidade legada
-  getSuitpayConfig() {
-    return this.getPushinpayConfig();
   }
 }
 

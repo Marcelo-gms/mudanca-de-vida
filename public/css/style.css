@@ -472,6 +472,27 @@ button {
   transform: translate(-50%, 0) scale(1);
 }
 
+/* Brilho deslizando sobre o banner de vitória */
+.win-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.35) 48%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0.35) 52%, transparent 70%) 0 0 / 250% 100%;
+  opacity: 0;
+}
+
+.win-banner.show::after {
+  opacity: 1;
+  animation: bannerShine 1.4s linear infinite;
+}
+
+@keyframes bannerShine {
+  from { background-position: 180% 0; }
+  to { background-position: -80% 0; }
+}
+
 .win-text {
   display: block;
   font-family: var(--font-display);
@@ -738,6 +759,20 @@ button {
   50% { opacity: 0.35; transform: scale(0.92); }
 }
 
+/* Respiração convidando ao clique quando a máquina está parada */
+.spin-btn:not(:disabled) {
+  animation: spinBreath 2.2s ease-in-out infinite;
+}
+
+.is-spinning .spin-btn,
+.spin-btn:active {
+  animation: none;
+}
+
+@keyframes spinBreath {
+  50% { transform: scale(1.035); filter: brightness(1.12); }
+}
+
 .spin-text {
   position: relative;
   font-family: var(--font-display);
@@ -916,9 +951,18 @@ button {
   font-family: var(--font-led);
   font-size: clamp(28px, 9vw, 48px);
   font-weight: 800;
-  color: #fff6c8;
-  text-shadow: 0 0 18px rgba(255, 200, 60, 0.9);
+  color: #ffd34d;
+  background: linear-gradient(100deg, #ffd24a 20%, #fff9dd 40%, #ffd24a 55%, #ff9d2e 75%, #ffd24a 90%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255, 200, 60, 0.75));
   font-variant-numeric: tabular-nums;
+  animation: goldSweep 1.8s linear infinite;
+}
+
+@keyframes goldSweep {
+  to { background-position: -250% 0; }
 }
 
 .big-win-hint {
@@ -1539,7 +1583,10 @@ button {
   .auth-card,
   .big-win-rays,
   .big-win-title,
+  .big-win-amount,
+  .spin-btn,
   .spin-btn::after,
+  .win-banner::after,
   .tiger-bonus-alert.show,
   .is-win .led-win,
   .is-win .line-marker,

@@ -61,7 +61,7 @@ Pedidos: deixar claro que se ganha na linha do meio, refazer admin e login, e **
 - KPIs com ícones e cores por tipo (4×2 no desktop, 2×4 no tablet, 1 coluna no celular); house edge fica vermelho quando negativo.
 - Tabelas viram cartões empilhados no celular (`data-label` em cada célula).
 - Sliders com trilho dourado preenchido, pesos dos rolos com a arte real dos símbolos, `alert()` trocado por toasts (`public/js/admin.js`).
-- **Correção de segurança (XSS):** a tela de usuários montava `onclick="openAdjustModal('<%= u.name %>')"`. O EJS escapa `'` como `&#39;`, mas o navegador decodifica isso antes de executar o JS do atributo, então um nome com aspas injetava script no painel do admin. Agora os dados ficam em `data-*` e um único listener lê `dataset`. O resultado do teste da SuitPay também passou a usar `textContent`.
+- **Correção de segurança (XSS):** a tela de usuários montava `onclick="openAdjustModal('<%= u.name %>')"`. O EJS escapa `'` como `&#39;`, mas o navegador decodifica isso antes de executar o JS do atributo, então um nome com aspas injetava script no painel do admin. Agora os dados ficam em `data-*` e um único listener lê `dataset`. O resultado do teste do gateway também passou a usar `textContent`.
 
 ## Em aberto
 
