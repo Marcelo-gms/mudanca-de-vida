@@ -146,10 +146,21 @@ tigrinho2/
 
 ## 4. Contas Pré-configuradas no Sistema
 
+Criadas por `scripts/initDb.js` (roda a cada boot do container, idempotente).
+
+**Contas demo — só quando `NODE_ENV` ≠ `production`:**
+
 | Papel | E-mail | Senha | Saldo Inicial |
 | :--- | :--- | :--- | :--- |
 | **Administrador** | `admin@tigrinho.com` | `admin1234` | R$ 0,00 |
 | **Jogador / Admin Demo** | `demo@tigrinho.com` | `demo1234` | R$ 100,00 (Rollover cumprido) |
+
+**Admin real — via `.env` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`, `ADMIN_DOCUMENT`):**
+- Criado se o e-mail não existir; se existir (ex.: cadastrado em `/register`), é promovido a admin e reativado.
+- A senha de uma conta existente só é sobrescrita com `ADMIN_RESET_PASSWORD=true` (use para recuperar a senha e remova depois).
+- Em produção a senha precisa ter 12+ caracteres e não pode ser uma das senhas demo; senão o seed é pulado com erro no log.
+
+**Em produção**, se as contas demo existirem (banco vindo de dev), o seed as rebaixa para `user`, bloqueia e troca a senha por uma aleatória.
 
 ---
 

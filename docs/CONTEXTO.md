@@ -81,7 +81,8 @@ npm run simulate-rtp  # valida RTP ~96% em 100k giros
 
 Usuário de teste: `demo@tigrinho.com` / `demo1234` (recriado pelo seed se o
 banco for novo — confira `scripts/initDb.js`). Há também `admin@tigrinho.com`
-com role admin.
+com role admin. **As contas demo só existem fora de produção**; em produção o
+admin vem de `ADMIN_EMAIL`/`ADMIN_PASSWORD` no `.env` (ver `docs/DOCKER.md`).
 
 Observação sobre testes: eles usam o **mesmo** SQLite de dev
 (`data/tigrinho.sqlite`); raramente um teste de concorrência falha por

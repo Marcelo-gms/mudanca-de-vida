@@ -11,5 +11,5 @@ COPY . .
 
 EXPOSE 3000
 
-# initDb é idempotente: cria schema e contas demo/admin se não existirem
+# initDb é idempotente: cria schema, contas demo (fora de produção) e o admin de ADMIN_* do .env
 CMD ["sh", "-c", "node scripts/initDb.js && node src/server.js"]
