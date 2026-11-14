@@ -5,10 +5,14 @@ const { initSchema } = require('./config/database');
 // Garante tabelas criadas antes de iniciar o listener
 initSchema();
 
-const server = app.listen(env.port, '0.0.0.0', () => {
+// A hospedagem (Passenger/cPanel) injeta process.env.PORT, que pode ser um número
+// ou o caminho de um socket. Por isso usamos o valor cru, sem parseInt e sem host fixo.
+const PORT = process.env.PORT || env.port;
+
+const server = app.listen(PORT, () => {
   console.log(`=======================================================`);
   console.log(` 🐯 Mini Plataforma iGaming Tigrinho iniciada com sucesso!`);
-  console.log(` 🚀 Servidor rodando em: http://localhost:${env.port} ou http://0.0.0.0:${env.port}`);
+  console.log(` 🚀 Servidor escutando em: ${PORT}`);
   console.log(` 📦 Modo: ${env.nodeEnv} | Asaas Mock: ${env.asaas.enableMock}`);
   console.log(`=======================================================`);
 

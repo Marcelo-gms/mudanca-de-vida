@@ -122,6 +122,11 @@ function seedEnvAdmin() {
     db.prepare("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?")
       .run(bcrypt.hashSync(password, 10), existing.id);
     console.log(`Password reset for ${email} (remove ADMIN_RESET_PASSWORD from .env now).`);
+  } else {
+    const matches = bcrypt.compareSync(password, db.prepare('SELECT password_hash FROM users WHERE id = ?').get(existing.id).password_hash);
+    console.log(`Admin ${email} already exists; password unchanged.` + (matches
+      ? ' ADMIN_PASSWORD matches the stored password.'
+      : ' ADMIN_PASSWORD does NOT match the stored password: set ADMIN_RESET_PASSWORD=true to apply it.'));
   }
 }
 

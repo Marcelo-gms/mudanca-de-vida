@@ -4,7 +4,12 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const env = {
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
-  sessionSecret: process.env.SESSION_SECRET || 'tigrinho-monolith-fallback-secret-key-12345',
+  // Cookie de sessão `secure` (só trafega por HTTPS). Padrão: ligado em produção.
+  // COOKIE_SECURE=false é uma saída de emergência enquanto o SSL não está pronto.
+  cookieSecure: process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === 'true'
+    : (process.env.NODE_ENV || 'development') === 'production',
+  sessionSecret:process.env.SESSION_SECRET || 'tigrinho-monolith-fallback-secret-key-12345',
   asaas: {
     apiKey: process.env.ASAAS_API_KEY || '',
     urlBase: process.env.ASAAS_URL_BASE || 'https://api.asaas.com/v3',

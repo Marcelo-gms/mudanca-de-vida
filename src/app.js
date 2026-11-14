@@ -16,6 +16,13 @@ const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
+// Em produção o app roda atrás de um proxy reverso (Passenger/Nginx da hospedagem)
+// que termina o HTTPS. Sem isso, req.secure é false e o cookie `secure` da sessão
+// nunca é enviado (login quebra), e o rate limiter vê o IP do proxy para todos.
+if (env.nodeEnv === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Segurança de Headers HTTP com Helmet
 app.use(
   helmet({
@@ -36,14 +43,31 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: env.nodeEnv === 'production',
+      secure: env.cookieSecure,
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
     }
   })
 );
 
+// Diagnóstico: com cookie `secure`, uma requisição que o app não enxerga como HTTPS
+// (acesso por http:// ou proxy sem X-Forwarded-Proto) nunca recebe a sessão,
+// e o usuário fica preso na tela de login. Avisa no log uma vez.
+if (env.cookieSecure) {
+  let warned = false;
+  app.use((req, res, next) => {
+    if (!warned && !req.secure && req.method === 'POST' && ['/login', '/register'].includes(req.path)) {
+      warned = true;
+      console.warn(`[Session] ${req.path} recebido sem HTTPS (protocol=${req.protocol}, x-forwarded-proto=${req.headers['x-forwarded-proto'] || 'ausente'}). ` +
+        'O cookie de sessão secure não será gravado e o login não persiste. Acesse por https:// com certificado válido.');
+    }
+    next();
+  });
+}
+
 // Template Engine EJS
 app.set('view engine', 'ejs');
+// Pré-preenche o login com a conta demo só fora de produção (em produção ela não existe).
+app.locals.prefillDemo = env.nodeEnv !== 'production';
 app.set('views', path.join(__dirname, 'views'));
 
 // Arquivos Estáticos (CSS, JS, Imagens, Áudios)
